@@ -1,15 +1,52 @@
 # Vue js project sample
 
+## Project setup
+```
+npm install
+```
+
+### Compiles and hot-reloads for development
+```
+npm run serve
+```
+
+### Compiles and minifies for production
+```
+npm run build
+```
+
+### Run your tests
+```
+npm run test
+```
+
+### Lints and fixes files
+```
+npm run lint
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).
+
 ## vue-cli install
 
 * npm i -g @vue/cli @vue/cli-service-global
 
 ## Create sample vue project
 
-* vue create vue-app
-  * select default
+```bash
+$ vue create vue-app
+```
+* select default
 
-* cd vue-app
-* npm run serve
+```bash
+cd vue-app
+npm run serve
+```
 
-* Go to site : localhost:8080
+* Access site
+  * localhost:8080
+
+## Reference
+
+* https://www.taniarascia.com/getting-started-with-vue/

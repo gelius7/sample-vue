@@ -1,0 +1,18 @@
+
+
+
+brew upgrade
+brew upgrade node
+
+
+# vue-cli install
+npm i -g @vue/cli @vue/cli-service-global
+
+vue create vue-app
+-> default
+
+cd vue-app
+npm run serve
+
+localhost:8080
+
