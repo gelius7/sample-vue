@@ -46,7 +46,7 @@ podTemplate(label: label, containers: [
     stage("Build") {
       container("node") {
         try {
-          sh 'npm install -g @vue/cli@latest'
+          sh 'npm install'
           butler.npm_build()
           butler.success(SLACK_TOKEN_DEV, "Build")
         } catch (e) {
