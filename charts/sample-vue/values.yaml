@@ -30,7 +30,7 @@ service:
 ingress:
   enabled: true
   subdomain: sample-vue
-  basedomain: jj0.opsnow.io
+  basedomain: jj1.opsnow.io
   hosts: {}
   # hosts:
   #   - sample-vue.opsnow.com

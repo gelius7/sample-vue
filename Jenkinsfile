@@ -80,62 +80,14 @@ podTemplate(label: label, containers: [
           }
         )
       }
-      stage("Deploy DEV") {
+      stage("Deploy Here") {
         container("builder") {
           try {
             // deploy(cluster, namespace, sub_domain, profile)
-            butler.deploy("dev", "${SERVICE_GROUP}-dev", "${IMAGE_NAME}-dev", "dev")
+            butler.deploy("jj1", "${SERVICE_GROUP}-dev", "${IMAGE_NAME}-dev", "dev")
             butler.success(SLACK_TOKEN_DEV, "Deploy DEV")
           } catch (e) {
             butler.failure(SLACK_TOKEN_DEV, "Deploy DEV")
-            throw e
-          }
-        }
-      }
-      stage("Request STAGE") {
-        container("builder") {
-          butler.proceed(SLACK_TOKEN_DEV, "Request STAGE", "stage")
-          timeout(time: 60, unit: "MINUTES") {
-            input(message: "${butler.name} ${butler.version} to stage")
-          }
-        }
-      }
-      stage("Proceed STAGE") {
-        container("builder") {
-          butler.proceed(SLACK_TOKEN_DQA, "Deploy STAGE", "stage")
-          timeout(time: 60, unit: "MINUTES") {
-            input(message: "${butler.name} ${butler.version} to stage")
-          }
-        }
-      }
-      stage("Deploy STAGE") {
-        container("builder") {
-          try {
-            // deploy(cluster, namespace, sub_domain, profile)
-            butler.deploy("dev", "${SERVICE_GROUP}-stage", "${IMAGE_NAME}-stage", "stage")
-            butler.success([SLACK_TOKEN_DEV,SLACK_TOKEN_DQA], "Deploy STAGE")
-          } catch (e) {
-            butler.failure([SLACK_TOKEN_DEV,SLACK_TOKEN_DQA], "Deploy STAGE")
-            throw e
-          }
-        }
-      }
-      stage("Proceed PROD") {
-        container("builder") {
-          butler.proceed(SLACK_TOKEN_DQA, "Deploy PROD", "prod")
-          timeout(time: 60, unit: "MINUTES") {
-            input(message: "${butler.name} ${butler.version} to prod")
-          }
-        }
-      }
-      stage("Deploy PROD") {
-        container("builder") {
-          try {
-            // deploy(cluster, namespace, sub_domain, profile)
-            butler.deploy("prod", "${SERVICE_GROUP}-prod", "${IMAGE_NAME}", "prod")
-            butler.success([SLACK_TOKEN_DEV,SLACK_TOKEN_DQA], "Deploy PROD")
-          } catch (e) {
-            butler.failure([SLACK_TOKEN_DEV,SLACK_TOKEN_DQA], "Deploy PROD")
             throw e
           }
         }
