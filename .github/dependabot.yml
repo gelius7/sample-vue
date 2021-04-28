@@ -1,0 +1,12 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: "@vue/cli-service"
+    versions:
+    - 4.5.11
+    - 4.5.12
