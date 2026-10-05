@@ -5,7 +5,16 @@ const fs = require('node:fs')
 async function check() {
   const rhythm = await import('../src/rhythm.mjs')
   const songs = await import('../src/songs.mjs')
-  const source = fs.readFileSync('src/components/BongoGame.vue', 'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '')
+  const component = fs.readFileSync('src/components/BongoGame.vue', 'utf8')
+  const style = component.split('<style scoped>')[1].split('</style>')[0]
+  for (const selector of ['.club .studio{height:100vh;height:100dvh;', '.club .track{flex:1;min-height:320px;height:auto;']) {
+    const index = style.indexOf(selector)
+    assert.ok(index >= 0, 'tall studio and lane apply without a phase selector')
+    const before = style.slice(0, index)
+    assert.equal((before.match(/\{/g) || []).length, (before.match(/\}/g) || []).length, 'tall geometry is not inside a mobile-only media query')
+  }
+  assert.match(style, /@media\(max-height:480px\)\{[\s\S]*\.club \.studio\{min-height:0\}/, 'compact landscape controls apply at every width')
+  const source = component.split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '')
   const mounts = [], unmounts = [], voices = [], frames = new Map(), listeners = new Set(), storage = new Map(), timers = new Map()
   let mobile = false, observerDisconnected = false
   let context, clock = 0, nextId = 0, fetchMode = 'ok', releaseFetch, downloads = 0
@@ -41,7 +50,7 @@ async function check() {
     requestAnimationFrame: fn => { frames.set(++nextId, fn); return nextId }, cancelAnimationFrame: id => frames.delete(id),
     setTimeout: fn => { timers.set(++nextId, fn); return nextId }, clearTimeout: id => timers.delete(id),
   }
-  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
+  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, songPickerElement, showSongPicker, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
   mounts.forEach(fn => fn())
   assert.equal(context, undefined, 'audio never starts before a gesture')
   assert.equal(game.pads.length, 5)
@@ -186,6 +195,31 @@ async function check() {
     game.measureTrack()
     game.freePlay()
     assert.equal(game.roundLeadIn.value, songs.LEAD_IN_MS)
+  }
+  // Tall ready/playing/paused geometry is shared by desktop, tablet and phones.
+  for (const isPhone of [false, true]) {
+    mobile = isPhone
+    game.trackElement.value = { clientHeight: 600 }
+    game.chooseSong('twinkle')
+    game.freePlay()
+    game.measureTrack()
+    const readyLine = game.hitLineY.value
+    assert.equal(readyLine, 576, 'ready mode uses the full lane')
+    await game.start()
+    assert.equal(game.hitLineY.value, readyLine, 'start never changes lane geometry')
+    const lead = game.roundLeadIn.value
+    assert.ok(lead > 7000, 'desktop and mobile both get a full-height lead-in')
+    game.pause()
+    assert.equal(game.hitLineY.value, readyLine, 'pause never collapses the lane')
+    game.resume()
+    assert.equal(game.hitLineY.value, readyLine)
+    assert.equal(game.roundLeadIn.value, lead)
+    let revealed = false
+    game.songPickerElement.value = { scrollIntoView() { revealed = true } }
+    await game.showSongPicker()
+    assert.equal(game.phase.value, 'idle')
+    assert.equal(revealed, true, 'song selection is reachable from the tall field')
+    assert.equal(game.hitLineY.value, readyLine, 'returning to ready keeps the lane tall')
   }
   mobile = false
   game.trackElement.value = null

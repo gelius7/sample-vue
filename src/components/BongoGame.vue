@@ -14,7 +14,7 @@
       <p>동요부터 빠른 클래식까지, 열두 곡을 다섯 가지 소리로 톡톡!</p>
     </section>
 
-    <fieldset class="difficulty-picker" aria-describedby="difficulty-help">
+    <fieldset ref="songPickerElement" class="difficulty-picker" aria-describedby="difficulty-help">
       <legend>1. 난이도별 곡 모음</legend>
       <button v-for="level in DIFFICULTIES" :key="level.id" :class="{ selected: level.id === difficultyId }" :aria-pressed="level.id === difficultyId" @click="chooseDifficulty(level.id)">
         <strong>{{ level.title }}</strong><small>{{ SONGS.filter(song => song.difficulty === level.id).length }}곡 · {{ level.subtitle }}</small>
@@ -29,11 +29,11 @@
     </fieldset>
     <div class="game-layout">
       <section class="studio" aria-label="고양이 리듬 게임">
-        <div class="mobile-hud">
-          <div class="mobile-song"><strong>{{ selectedSong.title }}</strong><span>{{ score.toLocaleString() }} pt · {{ combo }} 콤보 · {{ phase === 'finished' ? accuracy + '%' : seconds + '초' }}</span></div>
+        <div class="play-hud">
+          <div class="play-song"><strong>{{ selectedSong.title }}</strong><span>{{ score.toLocaleString() }} pt · {{ combo }} 콤보 · {{ phase === 'finished' ? accuracy + '%' : seconds + '초' }}</span></div>
           <button :aria-label="muted ? '소리 켜기' : '소리 끄기'" :aria-pressed="muted" @click="toggleMute">{{ muted ? '♪̸' : '♪' }}</button>
-          <button :disabled="phase === 'loading'" @click="phase === 'playing' ? pause() : phase === 'paused' ? resume() : start()">{{ phase === 'playing' ? '일시정지' : phase === 'paused' ? '이어하기' : phase === 'loading' ? '준비' : '다시' }}</button>
-          <button @click="freePlay">곡 선택</button>
+          <button :disabled="phase === 'loading'" @click="phase === 'playing' ? pause() : phase === 'paused' ? resume() : start()">{{ phase === 'playing' ? '일시정지' : phase === 'paused' ? '이어하기' : phase === 'loading' ? '준비' : phase === 'idle' ? '시작' : '다시' }}</button>
+          <button @click="showSongPicker">곡 선택</button>
         </div>
         <div class="studio-top"><span class="room-label"><i></i> 냥냥 리듬 클럽</span><span class="tempo">{{ difficulty.title }} · {{ selectedSong.bpm }} BPM <span>✦</span></span></div>
         <div class="stage" :class="{ grooving: pawActive[0] || pawActive[1] }">
@@ -147,12 +147,13 @@ const announcement = ref('난이도별 곡 모음에서 노래를 고르세요. 
 const seconds = computed(() => Math.max(0, Math.ceil((duration.value - elapsed.value) / 1000)))
 const accuracy = computed(() => Math.round(hits.value / Math.max(1, notes.value.length) * 100))
 const trackElement = ref(null)
+const songPickerElement = ref(null)
 const trackHeight = ref(86)
 const mobileViewport = ref(false)
 // Preserve the former pixels/second at each difficulty (excluding the 2px border).
 // A taller track adds preview time, rather than making notes faster.
 const fallSpeed = ref(84 * .8 / APPROACH_MS)
-const hitLineY = computed(() => mobileViewport.value && phase.value !== 'idle' ? Math.max(0, trackHeight.value - 24) : trackHeight.value * .8)
+const hitLineY = computed(() => Math.max(0, trackHeight.value - 24))
 const approachMs = computed(() => hitLineY.value / fallSpeed.value)
 const visibleNotes = computed(() => notes.value.filter(n => !n.hit && !n.missed && n.time - elapsed.value <= approachMs.value && n.time - elapsed.value >= -HIT_WINDOW))
 let trackObserver
@@ -329,7 +330,6 @@ async function start() {
   ensureAudio()
   phase.value = 'loading'
   if (selectedSong.value.audioFile) {
-    phase.value = 'loading'
     try {
       if (!audio) throw new Error('Web Audio unavailable')
       if (!audioBuffers.has(selectedId.value)) {
@@ -400,6 +400,11 @@ function freePlay() {
   feedback.value = ''
   announcement.value = '자유 연주. 봉고를 마음껏 두드려 보세요.'
 }
+async function showSongPicker() {
+  freePlay()
+  await nextTick()
+  if (songPickerElement.value) songPickerElement.value.scrollIntoView({ block: 'start' })
+}
 function keydown(event) {
   if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return
   const key = event.key.toLowerCase()
@@ -448,33 +453,33 @@ onUnmounted(() => {
 .lane{width:20%;border-right:1px dashed #e2d7c5;background:linear-gradient(0deg,transparent,var(--pad-color));opacity:.16}.hit-line span{width:25px;height:23px}.beat{width:25px;height:25px;font-size:10px}.pads{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.pad{background:var(--pad-color);border-color:#00000015;border-bottom-color:#00000025;min-height:88px}.pad-caption{position:static;display:block;font-size:9px;margin-top:7px}.pad strong{margin:6px 0 4px;text-align:center;font-size:24px}.keycap{position:static;display:block;width:22px;height:20px;line-height:18px;margin:0 auto 6px;font-size:10px}.pad.unused{opacity:.48}.pad-guide{font-size:10px;color:#8d806c;margin:12px 0 0}.pad-guide span{display:block;font-size:9px;margin-top:5px;color:#a29784}@media(max-width:740px){.pads{gap:5px;padding:0 12px}.pad{min-height:80px;border-radius:10px;padding:0}.pad strong{font-size:21px}.pad-caption{font-size:8px}.track{margin-left:12px;margin-right:12px}.keycap{font-size:10px}.studio-bottom{font-size:8px;padding-left:13px;padding-right:13px}.beat{width:23px;height:23px;line-height:20px}.hit-line span{width:24px}.pad-guide{font-size:9px}}
 .start-button:disabled{opacity:.6;cursor:wait}.audio-error{font-size:11px;line-height:1.6;color:#a55342}.music-credits{font-size:10px;line-height:1.7;color:#8d806c;margin-top:30px}.music-credits summary{cursor:pointer}.music-credits a{color:#786851}
 
-.mobile-hud{display:none}
-@media(max-width:740px){
-  .club.round-focused{position:fixed;inset:0;z-index:10;max-width:none;width:100%;height:100vh;height:100dvh;padding:0;background:var(--paper);overflow:hidden}
-  .round-focused>.topbar,.round-focused>.intro,.round-focused>.difficulty-picker,.round-focused>.difficulty-help,.round-focused>.song-picker,.round-focused>.music-credits,.round-focused>footer{display:none}
-  .round-focused .game-layout{display:block;height:100%}
-  .round-focused .session{display:none}
-  .round-focused .studio{height:100%;display:flex;flex-direction:column;border:0;border-radius:0;box-shadow:none;padding:env(safe-area-inset-top) max(0px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left))}
-  .round-focused .mobile-hud{display:flex;align-items:center;gap:4px;padding:6px 10px;min-height:58px;flex-shrink:0}
-  .mobile-song{flex:1;min-width:0;padding-left:48px}
-  .mobile-song strong,.mobile-song span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mobile-song strong{font-size:11px}.mobile-song span{font-size:9px;color:#8d806c;margin-top:4px}
-  .mobile-hud button{height:44px;min-width:44px;padding:0 7px;border:1px solid #e3dac9;border-radius:10px;background:#f2ede2;font-size:10px;font-weight:800}
-  .mobile-hud button:disabled{opacity:.5}
-  .round-focused .studio-top,.round-focused .studio-bottom{display:none}
-  .round-focused .stage{position:absolute;z-index:1;top:calc(env(safe-area-inset-top) + 6px);left:7px;width:47px;height:44px;pointer-events:none;background:none}
-  .round-focused .stage>span,.round-focused .speech{display:none}
-  .round-focused .cat{width:100%;height:44px;left:0;bottom:0}
-  .round-focused .track{flex:1;min-height:0;height:auto;margin:0 10px 8px;border-radius:12px}
-  .round-focused .track-hint{top:20px;font-size:11px;padding:0 10px;line-height:1.7}
-  .round-focused .feedback{top:44%;font-size:14px}
-  .round-focused .pads{flex-shrink:0;padding:0 10px;gap:5px}
-  .round-focused .pad{height:76px;min-height:76px}
-}
-@media(max-width:360px){.mobile-song{padding-left:0}.round-focused .stage{display:none}}
-@media(max-width:740px) and (max-height:450px){
-  .round-focused .mobile-hud{min-height:48px;padding-top:2px;padding-bottom:2px}
-  .round-focused .pad{height:58px;min-height:58px}.round-focused .pad-caption{display:none}
-  .round-focused .pad strong{font-size:19px;margin:4px 0 1px}.round-focused .keycap{margin-bottom:2px}
+/* The falling lane itself stays tall in every state and at every width. */
+.club .studio{height:100vh;height:100dvh;min-height:480px;display:flex;flex-direction:column;border:0;outline:1px solid #e6dfd0;box-shadow:none;padding:env(safe-area-inset-top) max(0px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left))}
+.play-hud{display:flex;align-items:center;gap:4px;padding:6px 10px;min-height:58px;flex-shrink:0;position:sticky;top:0;z-index:3;background:#fffdf8}
+.play-song{flex:1;min-width:0;padding-left:48px}
+.play-song strong,.play-song span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.play-song strong{font-size:11px}.play-song span{font-size:9px;color:#8d806c;margin-top:4px}
+.play-hud button{height:44px;min-width:44px;padding:0 7px;border:1px solid #e3dac9;border-radius:10px;background:#f2ede2;font-size:10px;font-weight:800}
+.play-hud button:disabled{opacity:.5}
+.club .studio-top,.club .studio-bottom{display:none}
+.club .stage{position:absolute;z-index:4;top:calc(env(safe-area-inset-top) + 6px);left:7px;width:47px;height:44px;pointer-events:none;background:none}
+.club .stage>span,.club .speech{display:none}
+.club .cat{width:100%;height:44px;left:0;bottom:0}
+.club .track{flex:1;min-height:320px;height:auto;margin:0 10px 8px;border-radius:12px}
+.club .track-hint{top:20px;font-size:11px;padding:0 10px;line-height:1.7}
+.club .feedback{top:44%;font-size:14px}
+.club .pads{flex-shrink:0;padding:0 10px;gap:5px;position:sticky;bottom:0;z-index:3;background:#fffdf8}
+.club .pad{height:76px;min-height:76px}
+.club.round-focused{position:fixed;inset:0;z-index:10;max-width:none;width:100%;height:100vh;height:100dvh;padding:0;background:var(--paper);overflow:auto}
+.round-focused>.topbar,.round-focused>.intro,.round-focused>.difficulty-picker,.round-focused>.difficulty-help,.round-focused>.song-picker,.round-focused>.music-credits,.round-focused>footer{display:none}
+.round-focused .game-layout{display:block;height:100%;width:100%;max-width:900px;margin:auto}
+.round-focused .session{display:none}
+.round-focused .studio{border-radius:0;outline:0}
+@media(max-width:360px){.play-song{padding-left:0}.club .stage{display:none}}
+@media(max-height:480px){
+  .club .studio{min-height:0}.club .track{min-height:0}
+  .play-hud{min-height:48px;padding-top:2px;padding-bottom:2px}
+  .club .pad{height:58px;min-height:58px}.club .pad-caption{display:none}
+  .club .pad strong{font-size:19px;margin:4px 0 1px}.club .keycap{margin-bottom:2px}
 }
 </style>
