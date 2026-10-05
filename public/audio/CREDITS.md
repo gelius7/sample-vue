@@ -8,6 +8,8 @@ These three sound recordings and compositions are by **Kevin MacLeod (incompetec
 
 The audio files retain this license separately from the game's code. You may share and adapt them, including commercially, provided you give appropriate attribution, link the license, and identify modifications. Do not imply Kevin MacLeod endorses this game. Do not impose restrictions that prevent the permissions given by CC BY 4.0. The recordings are provided without warranties, as described in Section 5 of that license.
 
+Each game edit contains real source music, up to 180 seconds, with no added silence, looping, time stretching, or pitch shifting. The game's approach/count-in and 700 ms result tail are separate from the music length.
+
 ## Electrodoodle
 
 - Creator: Kevin MacLeod (incompetech.com)
@@ -15,10 +17,14 @@ The audio files retain this license separately from the game's code. You may sha
 - Original track / attribution: https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1200079
 - Official original MP3: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Electrodoodle.mp3
 - License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
-- Local file: `electrodoodle.mp3`
-- Changes: excerpt from 16.000000 to 48.000000 seconds; constant gain ×0.80; 10 ms fade-in and 500 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
-- Duration after gapless decode: 32.000000 seconds (1,411,200 PCM frames at 44.1 kHz).
-- Chart: 120 BPM; the first downbeat attack is approximately 26 ms into the excerpt. 80 selected synth/backbeat accents, with spaces for rests and a 974 ms unscored ending.
+- Local file: `electrodoodle-long.mp3`
+- Changes: complete source recording, from 0.000000 to 166.060408 seconds; constant gain ×0.80; 10 ms fade-in and 500 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
+- Exact source sample range: [0, 7,323,264) at 44.1 kHz, after decoding the original MP3.
+- Duration after gapless decode: 166.060408 seconds (7,323,264 PCM frames at 44.1 kHz).
+- Chart: 120 BPM, 387 selected audible attacks, approximately 26 ms downbeat offset relative to the edited MP3. Opening syncopated hook, lead phrases, quieter reply, eighth-note build, returning lead, and a three-sixteenth groove through the original ending.
+- Ending: the last target precedes the audio end by 1.534 seconds, leaving the musical release/fade unscored.
+- File: 2,658,298 bytes; SHA-256 `3933bdcd67821ac168178f3e75cda27549818c7e49e4b4347ec615c5a53e810d`.
+- Original-file SHA-256: `75227ad153780ee0c57ae529caa7f8a891877a46596ff8800a16c90b34b6d18c`.
 
 ## Disco Medusae
 
@@ -27,10 +33,14 @@ The audio files retain this license separately from the game's code. You may sha
 - Original track / attribution: https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500041
 - Official original MP3: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Disco%20Medusae.mp3
 - License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
-- Local file: `disco-medusae.mp3`
-- Changes: excerpt from 20.869569 to 54.260884 seconds; constant gain ×0.91; 10 ms fade-in and 500 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
-- Duration after gapless decode: 33.391315 seconds (1,472,557 PCM frames at 44.1 kHz).
-- Chart: 115 BPM; the first downbeat attack is approximately 26 ms into the excerpt. 75 selected clavinet/guitar/drum accents; the first target is the offbeat at approximately 156 ms. The final 1.148 seconds are unscored.
+- Local file: `disco-medusae-long.mp3`
+- Changes: source excerpt from 41.739138 to 221.283265 seconds; constant gain ×0.91; 10 ms fade-in and 500 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
+- Exact source sample range: [1,840,696, 9,758,592) at 44.1 kHz, after decoding the original MP3.
+- Duration after gapless decode: 179.544127 seconds (7,917,896 PCM frames at 44.1 kHz).
+- Chart: 115 BPM, 364 selected audible attacks, approximately 26 ms downbeat offset relative to the edited MP3. Starts on the source recording’s bar 21. Clavinet/guitar replies, returning lead, bass-led middle section, lead reprise, and the original closing phrase. No targets are placed in the final natural release.
+- Ending: the last target precedes the audio end by 2.257 seconds, leaving the musical release/fade unscored.
+- File: 2,874,385 bytes; SHA-256 `4edb55fd87045504f5c013dd75afe278a5a92d9f1118dc6eec106a983577281b`.
+- Original-file SHA-256: `1b54c9d99110f5ad3e8ced322681f0f81d18c919434e55375b40dc75c8bb09f3`.
 
 ## EDM Detection Mode
 
@@ -39,15 +49,25 @@ The audio files retain this license separately from the game's code. You may sha
 - Original track / attribution: https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500026
 - Official original MP3: https://incompetech.com/music/royalty-free/mp3-royaltyfree/EDM%20Detection%20Mode.mp3
 - License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
-- Local file: `edm-detection-mode.mp3`
-- Changes: excerpt from 30.000000 to 60.000000 seconds; constant gain ×0.76; 10 ms fade-in and 500 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
-- Duration after gapless decode: 30.000000 seconds (1,323,000 PCM frames at 44.1 kHz).
-- Chart: 128 BPM; the first downbeat attack is approximately 22 ms into the excerpt. 133 selected synth, drum, and hi-hat accents. The offbeat hats enter halfway through this excerpt, so the chart becomes denser there. The final 915.5 ms are unscored.
+- Local file: `edm-detection-mode-long.mp3`
+- Changes: source excerpt from 30.000000 to 210.000000 seconds; constant gain ×0.76; 10 ms fade-in and 2000 ms fade-out; re-encoded as 128 kbps, 44.1 kHz stereo MP3. No tempo or pitch change.
+- Exact source sample range: [1,323,000, 9,261,000) at 44.1 kHz, after decoding the original MP3.
+- Duration after gapless decode: 180.000000 seconds (7,938,000 PCM frames at 44.1 kHz).
+- Chart: 128 BPM, 699 selected audible attacks, approximately 22 ms downbeat offset relative to the edited MP3. Starts on the source recording’s bar 17. Main synth motif, hi-hat groove, sparse breakdown at game-audio seconds 75–105, then the full beat returns. The breakdown has only three clearly audible hat accents per bar; absent kick/synth attacks are omitted.
+- Ending: the last target precedes the audio end by 2.322 seconds, leaving the musical release/fade unscored.
+- File: 2,881,496 bytes; SHA-256 `2f1a558572713057e08d8542079b2c5ac221a83092d78d459d49edf74765391a`.
+- Original-file SHA-256: `746f7b1d4dad9c949a67bc063e0ca79da34452c69cd98f4ab9c16a712e92e951`.
 
 ## Verification and timing
 
 Sources and terms were checked on 2026-10-05. The current Incompetech track-page code loads the official `pieces.json` catalog and displays a CC BY 4.0 attribution notice for each selected title. The catalog confirms the three titles, ISRC identifiers, MP3 filenames, and listed tempos of 120, 115, and 128 BPM. The official licensing page is https://incompetech.com/music/royalty-free/licenses/ .
 
-All clips span 16 four-beat bars. Excerpt boundaries are sample-aligned; the small attack offsets were estimated from the decoded waveforms and frequency-band onset envelopes. The charts select audible accents on the sixteenth-note grid and deliberately omit other accompaniment. They are rhythm-game adaptations, not full note-for-note transcriptions. The game adds its own 1.4-second approach/count-in before both audio and chart start. Its gameplay timing uses the same Web Audio clock for both.
+Edits and chart lengths were expanded on 2026-10-05 using the previously obtained official source MP3s. Excerpt boundaries are sample-aligned. Electrodoodle retains its complete original musical form and ending. Disco Medusae starts at a bar boundary and retains its natural ending. EDM Detection Mode covers 96 complete four-beat bars and fades over its last two seconds; its final scoring notes precede that fade.
 
-MP3's encoded packet duration may include encoder delay/padding. The duration values above and the game metadata describe the gapless decoded PCM, not padded packet duration. The MP3s have Xing/LAME gapless metadata. Together, they are 1,530,755 bytes (about 1.46 MiB).
+The charts select audible accents on the sixteenth-note grid and deliberately omit other accompaniment. Quiet sections are not filled with artificial targets. The lane patterns are authored phrase/accent gestures with recurring motifs, not an automatic pitch transcription of the recordings or a claim of full note-for-note transcription. The nine synthesized songs separately use their programmed MIDI pitches, with four complete reprises of each existing theme arrangement; they are not recordings or complete editions of the original compositions.
+
+After encoding, all three MP3s were decoded again and their exact PCM frame counts, peaks, fades, and chart onsets checked. Every selected target has a measured frequency-band attack within ±50 ms; 95th-percentile absolute attack offsets are 9.1 ms for Electrodoodle, 31.7 ms for Disco Medusae, and 22.1 ms for EDM Detection Mode. These are waveform/onset measurements, not a claim of perfect perceptual transcription. Peak sample magnitudes remain below 0.94, without clipping. Runtime regression tests also verify every target's authored lane, safe repeat spacing, deterministic timing, quiet breakdown, late-song targets, and the music-duration limit.
+
+The game adds its own approach/count-in before both audio and chart start; it is at least 1.4 seconds and may be longer for the selected viewport. Audio and gameplay use the same Web Audio clock. MP3's encoded packet duration may include encoder delay/padding; the durations above and game metadata describe the gapless decoded PCM. All files include Xing/LAME gapless metadata.
+
+Together, the three MP3 files are 8,414,179 bytes (about 8.02 MiB); each is below 2.9 MB. Only the selected recording needs to load before play.

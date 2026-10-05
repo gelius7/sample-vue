@@ -9,7 +9,7 @@ const jacques = melody('60 62 64 60 60 62 64 60 64 65 67 64 65 67 67 69 67 65 64
 const mary = melody('64 62 60 62 64 64 64 62 62 62 64 64 64 64 62 60 62 64 64 64 64 62 62 64 62 60', [1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,4])
 
 
-// Short, newly programmed lead-line excerpts; numbers are MIDI pitches / quarter-note beats.
+// Newly programmed historic lead-line themes; numbers are MIDI pitches / quarter-note beats.
 // A dash is a real rest: it advances the shared audio/chart clock without a target.
 const phrase = text => text.trim().split(/\s+/).map(token => {
   const [pitch, beats = '1'] = token.split('/')
@@ -50,7 +50,7 @@ const cancanA = phrase(`69/.5 76/.5 76/.5 78/.5 76/.5 74/.5 74/.5 78/.5
   78/.5 76/.5 78/.5 76/.5`)
 const cancan = [...cancanA, ...phrase('78/.5 76/.5 78/.5 76/.5'), ...cancanA, ...phrase('76/.5 74/.5 74')]
 
-export const SONGS = [
+const SYNTH_THEMES = [
   { id: 'twinkle', title: '반짝반짝 작은 별', subtitle: 'Twinkle, Twinkle, Little Star', icon: '✦', difficulty: 'easy', lanes: [0, 4], bpm: 104, bassMidi: 48, melody: twinkle },
   { id: 'jacques', title: '프레르 자크', subtitle: 'Frère Jacques', icon: '♬', difficulty: 'easy', lanes: [0, 2, 4], bpm: 112, bassMidi: 48, melody: [...jacques, ...jacques] },
   { id: 'mary', title: '메리의 작은 양', subtitle: 'Mary Had a Little Lamb', icon: '♡', difficulty: 'easy', lanes: [0, 2, 4], bpm: 116, bassMidi: 48, melody: [...mary, ...mary] },
@@ -60,6 +60,13 @@ export const SONGS = [
   { id: 'turkish', title: '터키 행진곡', subtitle: '모차르트 · K.331', icon: '♜', difficulty: 'hard', lanes: [0, 1, 2, 3, 4], bpm: 120, melody: [...turkish, ...turkish, ...turkish, ...turkish] },
   { id: 'tell', title: '윌리엄 텔 서곡', subtitle: '로시니 · 질주하는 피날레', icon: '♞', difficulty: 'hard', lanes: [0, 1, 2, 3, 4], bpm: 120, melody: [...phrase('59/.25 59/.25'), ...tell, ...tell, ...tell, ...tell.slice(0, -2), ...phrase('-/.5')] },
   { id: 'cancan', title: '캉캉', subtitle: '오펜바흐 · 지옥의 갤럽', icon: '♢', difficulty: 'hard', lanes: [0, 1, 2, 3, 4], bpm: 144, melody: [...cancan, ...cancan] },
+]
+
+// Four complete theme reprises make a 104–138 second playable arrangement.
+// Repeat musical phrases, including their real rests, rather than adding silence.
+// These are theme-based arrangements, not claims to reproduce the complete works.
+export const SONGS = [
+  ...SYNTH_THEMES.map(song => ({ ...song, melody: Array(4).fill(song.melody).flat() })),
   ...RECORDED_SONGS,
 ]
 
@@ -67,21 +74,21 @@ export const LEAD_IN_MS = 1400
 export function songTimeline(song, leadInMs = LEAD_IN_MS) {
   if (song.audioFile) return {
     melody: [], bass: [],
-    targets: song.beats.map((beat, id) => ({ id, side: song.targetLanes[id], time: Math.round(leadInMs + beat * 60000 / song.bpm) })),
+    targets: song.beats.map((beat, id) => ({ id, side: song.targetLanes[id], time: leadInMs + Math.round(beat * 60000 / song.bpm) })),
     duration: leadInMs + song.audioDurationMs + 700,
   }
-  let time = leadInMs
+  let time = 0
   const melody = song.melody.map((note, id) => {
     const duration = note.beats * 60000 / song.bpm
-    const event = { ...note, id, time: Math.round(time), duration }
+    const event = { ...note, id, time: leadInMs + Math.round(time), duration }
     time += duration
     return event
   })
   const bass = []
   // The nursery songs retain their quiet original C-major pulse. Classical
   // excerpts are unaccompanied so an invented drone cannot clash with their harmony.
-  for (let beat = 0; song.bassMidi !== undefined && leadInMs + beat * 60000 / song.bpm < time - 1; beat += 4) {
+  for (let beat = 0; song.bassMidi !== undefined && beat * 60000 / song.bpm < time - 1; beat += 4) {
     bass.push({ midi: song.bassMidi, time: leadInMs + beat * 60000 / song.bpm, duration: 2 * 60000 / song.bpm })
   }
-  return { melody, bass, targets: melody.filter(note => note.midi !== null), duration: time + 700 }
+  return { melody, bass, targets: melody.filter(note => note.midi !== null), duration: leadInMs + time + 700 }
 }

@@ -50,7 +50,7 @@ async function check() {
     requestAnimationFrame: fn => { frames.set(++nextId, fn); return nextId }, cancelAnimationFrame: id => frames.delete(id),
     setTimeout: fn => { timers.set(++nextId, fn); return nextId }, clearTimeout: id => timers.delete(id),
   }
-  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, songPickerElement, showSongPicker, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
+  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, SCROLL_SPEEDS, scrollMultiplier, chooseSpeed, accessibleTap, feedback, songPickerElement, showSongPicker, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
   mounts.forEach(fn => fn())
   assert.equal(context, undefined, 'audio never starts before a gesture')
   assert.equal(game.pads.length, 5)
@@ -59,6 +59,7 @@ async function check() {
   storage.set('bongo-cat-best-twinkle', '12345')
   storage.set('bongo-cat-best-v2-twinkle-hard', '23456')
   storage.set('bongo-cat-best-v3-twinkle', '34567')
+  storage.set('bongo-cat-best-v4-twinkle', '45678')
   const records = new Map()
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
@@ -69,6 +70,7 @@ async function check() {
     assert.equal(game.phase.value, 'playing')
     assert.equal(frames.size, 1)
     assert.deepEqual(game.notes.value, rhythm.createNotes(song))
+    assert.ok(game.audioBuffers.size <= 1, 'long recording cache never retains multiple decoded tracks')
     if (song.audioFile) {
       const buffer = voices.at(-1)
       assert.equal(buffer.type, 'buffer')
@@ -91,7 +93,7 @@ async function check() {
     assert.equal(frames.size, 0)
     assert.equal(game.best.value, expected)
     records.set(song.id, expected)
-    assert.equal(storage.get(`bongo-cat-best-v4-${song.id}`), String(expected))
+    assert.equal(storage.get(`bongo-cat-best-v5-${song.id}`), String(expected))
     await game.start()
     assert.equal(game.score.value, 0)
     assert.equal(game.hits.value, 0)
@@ -118,6 +120,7 @@ async function check() {
   assert.equal(storage.get('bongo-cat-best-twinkle'), '12345')
   assert.equal(storage.get('bongo-cat-best-v2-twinkle-hard'), '23456')
   assert.equal(storage.get('bongo-cat-best-v3-twinkle'), '34567')
+  assert.equal(storage.get('bongo-cat-best-v4-twinkle'), '45678')
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
     assert.equal(game.best.value, records.get(song.id), '12 song records restore independently')
@@ -154,6 +157,46 @@ async function check() {
   args.document.hidden = true; game.visibility()
   assert.equal(game.phase.value, 'paused')
   args.document.hidden = false
+  // Wrong presses cost 50, clamp at zero, and never penalize inactive/count-in input.
+  game.chooseSong('twinkle')
+  await game.start()
+  const penaltyEpoch = context.currentTime
+  game.score.value = 100
+  context.currentTime = penaltyEpoch + .1
+  game.tap(1)
+  assert.equal(game.score.value, 100, 'count-in practice is free')
+  context.currentTime = penaltyEpoch + game.notes.value[0].time / 1000
+  game.tap(game.notes.value[0].side)
+  assert.equal(game.score.value, 202, 'correct hits retain their existing points')
+  context.currentTime += .01
+  game.tap(1)
+  assert.equal(game.score.value, 152, 'wrong lane loses 50 points')
+  assert.equal(game.combo.value, 0)
+  assert.equal(game.feedback.value, '-50점')
+  game.accessibleTap({ detail: 1 }, 1)
+  assert.equal(game.score.value, 152, 'pointer click following pointerdown is not counted twice')
+  game.keydown({ key: 's', repeat: true, target: { tagName: 'BODY' }, preventDefault() {} })
+  assert.equal(game.score.value, 152, 'held key repeats cannot repeat a hit or penalty')
+  game.score.value = 30
+  game.accessibleTap({ detail: 0 }, 1)
+  assert.equal(game.score.value, 0)
+  assert.equal(game.feedback.value, '-30점', 'feedback shows the actual deduction near zero')
+  for (let i = 0; i < 10; i++) game.tap(1)
+  assert.equal(game.score.value, 0, 'spamming never makes score negative or earns points')
+  game.score.value = 100
+  context.currentTime = penaltyEpoch + (game.notes.value[0].time + 300) / 1000
+  game.tap(0)
+  assert.equal(game.score.value, 50, 'pressing between hit windows also loses points')
+  game.pause(); game.tap(1)
+  assert.equal(game.score.value, 50, 'paused input is free')
+  game.resume()
+  context.currentTime = penaltyEpoch + game.duration.value / 1000 + 1
+  game.update()
+  const finishedScore = game.score.value
+  game.tap(1)
+  assert.equal(game.score.value, finishedScore, 'finished input is free')
+  game.freePlay(); game.tap(1)
+  assert.equal(game.score.value, 0, 'idle input is free')
   // A phone-sized playing field gives more preview, without accelerating the notes.
   mobile = true
   game.trackElement.value = { clientHeight: 680 }
@@ -224,6 +267,41 @@ async function check() {
   mobile = false
   game.trackElement.value = null
   game.measureTrack()
+  // Four selectable scroll rates change only travel speed and matching count-in.
+  assert.deepEqual(game.SCROLL_SPEEDS, [1, 2, 4, 8])
+  for (const id of ['twinkle', 'elise', 'turkish', 'electrodoodle']) {
+    game.chooseSong(id)
+    const song = songs.SONGS.find(s => s.id === id)
+    const normalTimeline = songs.songTimeline(song)
+    for (const multiplier of game.SCROLL_SPEEDS) {
+      game.chooseSpeed(multiplier)
+      game.trackElement.value = { clientHeight: 600 }
+      await game.start()
+      assert.equal(game.scrollMultiplier.value, multiplier)
+      const referenceHeight = { easy: 107, normal: 150, hard: 190 }[song.difficulty]
+      assert.equal(game.fallSpeed.value, (referenceHeight - 2) * .8 / rhythm.APPROACH_MS * multiplier)
+      const speed = game.fallSpeed.value, lead = game.roundLeadIn.value
+      assert.ok(Math.abs(game.duration.value - lead - normalTimeline.duration + songs.LEAD_IN_MS) < 1e-6, 'music never speeds up')
+      assert.deepEqual(game.notes.value.map(n => ({ side: n.side, relativeTime: n.time - lead })), rhythm.createNotes(song).map(n => ({ side: n.side, relativeTime: n.time - songs.LEAD_IN_MS })), 'chart rhythm and lanes are unchanged')
+      assert.ok(game.notes.value[0].time >= game.approachMs.value + 199)
+      const last = game.notes.value.at(-1)
+      game.elapsed.value = last.time
+      assert.equal(game.noteY(last), game.hitLineY.value, 'final note reaches the line at the same musical time')
+      game.pause()
+      game.trackElement.value.clientHeight = 680
+      game.measureTrack()
+      game.resume()
+      assert.equal(game.fallSpeed.value, speed)
+      assert.equal(game.roundLeadIn.value, lead, 'resize and resume preserve the song clock')
+      game.chooseSpeed(3)
+      assert.equal(game.phase.value, 'playing', 'invalid speed cannot disrupt playback')
+      game.chooseSpeed(multiplier === 8 ? 1 : 8)
+      assert.equal(game.phase.value, 'idle', 'changing speed resets instead of teleporting active notes')
+      assert.equal(game.notes.value.length, 0)
+    }
+  }
+  game.chooseSpeed(1)
+  game.trackElement.value = null
   // Failed download is retryable; stale asynchronous loads cannot start a different song.
   const recording = songs.SONGS.find(s => s.audioFile)
   game.audioBuffers.clear(); game.chooseSong(recording.id); fetchMode = 'fail'
@@ -237,6 +315,7 @@ async function check() {
   game.chooseSong('mary'); releaseFetch(); await pending
   assert.equal(game.phase.value, 'idle')
   assert.equal(game.selectedId.value, 'mary')
+  assert.equal(game.audioBuffers.size, 0, 'stale downloads never repopulate the recording cache')
   assert.equal(frames.size, 0)
   fetchMode = 'ok'; game.chooseSong(recording.id); await game.start()
   assert.equal(game.phase.value, 'playing')
