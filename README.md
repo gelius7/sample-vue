@@ -39,10 +39,10 @@ Local development and ordinary builds continue to use `/`.
 
 ## Games
 
-- **냥냥 리듬 클럽** (`#bongo`): original SVG cat, two touch/keyboard pads, and three selectable instrumental children's melodies. Choose Easy, Normal, or Hard without changing the music's tempo. Easy uses spaced melody onsets and alternating paws; Normal follows every melody onset with varied hand patterns; Hard adds half-beat pulses and double taps. Timing windows tighten from ±220 ms to ±150 ms to ±100 ms (Perfect: ±110/70/45 ms). Each song lasts about 30–37 seconds. Perfect timing earns 100 points, good timing 70, plus a small combo bonus. Best scores are stored separately for all nine song/difficulty combinations on this browser. The new charts use versioned records; previous single-level scores are left untouched. Changing a song or difficulty stops and resets the round.
+- **냥냥 리듬 클럽** (`#bongo`): original SVG cat, five colored touch/keyboard percussion pads (A/S/D/K/L), and 12 songs. Choose a difficulty category, then one of its songs: difficulty belongs to the music, not a second setting on the same song. Easy nursery songs use two or three pads; the classical and electronic tracks introduce more pads, rests, offbeats, and faster runs. Every synthesized target follows an actual melody onset; the three recorded tracks have groove-aligned charts. All songs share ±150 ms Good and ±70 ms Perfect timing with a 1.2-second approach. No faster filler grid is overlaid on a slow melody. Perfect earns 100 points, Good 70, plus a small combo bonus. Browser-only records use `bongo-cat-best-v3-{song}`; old two-pad and per-difficulty records are left untouched and never misattributed. Changing category/song resets the round and cancels audio, timers, and animation.
 - **수박 만들기** (`#watermelon`): drop and combine matching fruits into larger ones, with score, best score, pause, restart, and overflow game over. Original canvas artwork and lightweight local physics.
 
-No account, tracking, server, game API, or downloaded audio is used. Sound only starts after a gesture. Mute, pause/resume, and replay are supported. Switching away from the page pauses a round; leaving a game destroys its state and stops its audio/animation/listeners.
+No account, tracking, server, or game API is used. Three credited, licensed music excerpts are served locally with the app; other songs are synthesized in Web Audio. Sound only starts after a gesture. Mute, pause/resume, and replay are supported. Recorded clips are fetched on first play, decoded and cached; pause/resume seeks to the matching chart position. Failed loads can be retried, and late load completion cannot start a different song or revive a backgrounded/unmounted game. Switching away from the page pauses a round; leaving a game destroys its state and stops its audio/animation/listeners.
 
 ## Adding another game
 
@@ -55,13 +55,32 @@ No account, tracking, server, game API, or downloaded audio is used. Sound only 
 
 ## Music provenance
 
-Only the historic melody lines below are used. The Web Audio timbre and simple accompaniment in this repository are original; there are no copied recordings, modern arrangements, or lyrics (including translated lyrics).
+The first nine songs use only historic melody lines. Their Web Audio timbre, nursery accompaniment, and short playable excerpts are original; no modern classical recording, arrangement, or lyrics (including translated lyrics) are copied. The three separately licensed recordings are listed below.
 
 - **반짝반짝 작은 별 / Twinkle, Twinkle, Little Star**: traditional French melody, *Ah! vous dirai-je, maman*. The Morgan Library links it to Twinkle and documents Mozart's surviving 1781–1782 variations: https://www.themorgan.org/exhibitions/online/mozart/418 . Mozart did not compose the underlying traditional melody.
 - **프레르 자크 / Frère Jacques**: documented in *La clé du caveau* (1811), page 309, no. 726: https://www.themorgan.org/music-manuscripts-and-printed-music/130800 .
 - **메리의 작은 양 / Mary Had a Little Lamb**: the familiar melodic contour is documented in the “Good Night” chorus (“Merrily we roll along”), *Carmina Yalensia* (1867), printed page 47 (PDF page 53): https://upload.wikimedia.org/wikipedia/commons/e/e4/Carmina_Yalensia_-_a_complete_and_accurate_collection_of_Yale_College_songs_-_with_piano_accompaniment_(IA_carminayalensiac00garr).pdf#page=53 . This game uses its repeated-E phrase. This is not the different Lowell Mason setting of 1831.
 
-These historical melody sources predate modern copyright terms. New recordings and arrangements can have separate rights and are not included here.
+### Classical excerpts (original synthesis)
+
+- **환희의 송가 / Ode to Joy**: Beethoven, Symphony No. 9, Op. 125 (completed 1824; first print 1826). Theme transposed to C major. [Beethoven-Haus work record](https://www.beethoven.de/de/work/view/5556714292117504).
+- **엘리제를 위하여 / Für Elise**: Beethoven, WoO 59 (1810; first print 1867). Opening A-minor theme, with a short rest at each excerpt boundary. [Beethoven-Haus work record](https://www.beethoven.de/de/work/view/5327609864912896).
+- **사계 · 봄 / Spring**: Vivaldi, RV 269, first movement (first print 1725). Principal pitches from the original solo-violin part, with trill ornament omitted and a moderate practice tempo. [BnF original edition](https://gallica.bnf.fr/ark:/12148/btv1b525002238), [inspected 1725 facsimile](https://s9.imslp.org/files/imglnks/usimg/4/49/IMSLP310699-PMLP126432-rv_269_violinos.pdf).
+- **터키 행진곡 / Rondo alla turca**: Mozart, K. 331 finale (first print 1784). Historical opening theme, ornamental grace notes omitted. [Mozarteum catalog](https://kv.mozarteum.at/de/work/sonate-in-a-4091), [1878 score, printed p.126 / PDF p.9](https://vmirror.imslp.org/files/imglnks/usimg/f/fe/IMSLP56321-PMLP01846-Mozart_Werke_Breitkopf_Serie_20_KV331.pdf).
+- **윌리엄 텔 서곡 / William Tell overture**: Rossini, galop theme (1829). Original-note first-violin theme with final pickup omitted at the excerpt ending. [University of Bologna premiere record](https://corago.unibo.it/libretto/DMBM20690), [historical full score, printed pp.30–31 / PDF pp.34–35](https://ks15.imslp.org/files/imglnks/usimg/1/14/IMSLP320363-PMLP07234-Rossini_-_GuillaumeTell_I_(fs.ed.Brandus).pdf).
+- **캉캉 / Galop infernal**: Offenbach, *Orphée aux enfers* (1858; revised 1874). Historical D-major theme, ornamental grace notes omitted. [BnF catalog](https://catalogue.bnf.fr/ark:/12148/cb13916735c), [Bote & Bock score, ca.1880, printed p.123 / PDF p.2](https://s9.imslp.org/files/imglnks/usimg/7/7d/IMSLP26815-PMLP24816-Offenbach_Orpheus_in_der_Unterwelt_Galop_infernal_BB_vs.pdf).
+
+These historical compositions and source editions are public domain. Modern recordings and arrangements have separate rights; none are used for the nine synthesized songs.
+
+### Licensed recorded excerpts
+
+**Electrodoodle**, **Disco Medusae**, and **EDM Detection Mode** by **Kevin MacLeod (incompetech.com)** are included under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). The recordings are excerpted, faded, and volume-adjusted for this game, without tempo or pitch changes. Their music license is separate from this repository's MIT code license. The game's expandable music credits show the attribution and source links; exact source files, excerpt timings, and changes are recorded in [public/audio/CREDITS.md](public/audio/CREDITS.md).
+
+- [Electrodoodle official source](https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1200079)
+- [Disco Medusae official source](https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500041)
+- [EDM Detection Mode official source](https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500026)
+
+The clips are local app assets and do not make runtime requests to third-party music sites.
 
 ### Lints and fixes files
 ```

@@ -11,26 +11,26 @@
     <section class="intro">
       <span class="eyebrow"><span></span> LITTLE PAWS, BIG GROOVE</span>
       <h1>오늘도, <span>냥냥하게.</span></h1>
-      <p>익숙한 동요에 맞춰, 두 개의 앞발로 톡톡!</p>
+      <p>동요부터 빠른 클래식까지, 열두 곡을 다섯 가지 소리로 톡톡!</p>
     </section>
 
-    <fieldset class="song-picker">
-      <legend>오늘의 연주곡</legend>
-      <button v-for="song in SONGS" :key="song.id" :class="{ selected: song.id === selectedId }" :aria-pressed="song.id === selectedId" @click="chooseSong(song.id)">
-        <span class="song-icon" aria-hidden="true">{{ song.icon }}</span><span><strong>{{ song.title }}</strong><small>{{ song.subtitle }}</small></span><span class="song-check" aria-hidden="true">{{ song.id === selectedId ? '✓' : '♪' }}</span>
-      </button>
-    </fieldset>
     <fieldset class="difficulty-picker" aria-describedby="difficulty-help">
-      <legend>나에게 맞는 난이도</legend>
+      <legend>1. 난이도별 곡 모음</legend>
       <button v-for="level in DIFFICULTIES" :key="level.id" :class="{ selected: level.id === difficultyId }" :aria-pressed="level.id === difficultyId" @click="chooseDifficulty(level.id)">
-        <strong>{{ level.title }}</strong><small>{{ level.subtitle }}</small>
+        <strong>{{ level.title }}</strong><small>{{ SONGS.filter(song => song.difficulty === level.id).length }}곡 · {{ level.subtitle }}</small>
       </button>
     </fieldset>
-    <p id="difficulty-help" class="difficulty-help">{{ difficulty.description }}<span>곡이나 난이도를 바꾸면 새로 시작해요.</span></p>
+    <p id="difficulty-help" class="difficulty-help">{{ difficulty.description }}<span>모든 곡의 판정은 같아요. 곡 고유의 빠르기와 박자로 도전해요.</span></p>
+    <fieldset class="song-picker">
+      <legend>2. {{ difficulty.title }} · 오늘의 연주곡</legend>
+      <button v-for="song in filteredSongs" :key="song.id" :class="{ selected: song.id === selectedId }" :aria-pressed="song.id === selectedId" @click="chooseSong(song.id)">
+        <span class="song-icon" aria-hidden="true">{{ song.icon }}</span><span><strong>{{ song.title }}</strong><small>{{ song.subtitle }}</small><small class="song-tempo">{{ song.bpm }} BPM</small></span><span class="song-check" aria-hidden="true">{{ song.id === selectedId ? '✓' : '♪' }}</span>
+      </button>
+    </fieldset>
     <div class="game-layout">
       <section class="studio" aria-label="고양이 리듬 게임">
         <div class="studio-top"><span class="room-label"><i></i> 냥냥 리듬 클럽</span><span class="tempo">{{ difficulty.title }} · {{ selectedSong.bpm }} BPM <span>✦</span></span></div>
-        <div class="stage" :class="{ grooving: active[0] || active[1] }">
+        <div class="stage" :class="{ grooving: pawActive[0] || pawActive[1] }">
           <span class="stage-star star-one" aria-hidden="true">✧</span><span class="stage-star star-two" aria-hidden="true">✦</span>
           <span class="music-note note-one" aria-hidden="true">♪</span><span class="music-note note-two" aria-hidden="true">♫</span>
           <div class="speech">{{ phase === 'finished' ? '멋진 연주였어, 냥!' : combo >= 5 ? '지금 느낌 좋은데? ♡' : '같이 두드릴래? ♡' }}</div>
@@ -41,34 +41,34 @@
             <path d="M108 202q-14-24-5-82L94 47q0-13 12-6l44 31q50-19 99 0l43-31q12-7 12 6l-9 74q13 53-7 82Z" fill="#fffaf0" stroke="#514538" stroke-width="4.5" stroke-linejoin="round"/>
             <path d="m108 57 6 42 25-19Zm182 0-7 42-24-19Z" fill="#f4b3a0"/>
             <path d="M173 68q7 15 5 27m22-31v25m22-21q-7 15-5 27" stroke="#eddbc0" stroke-width="8" stroke-linecap="round" fill="none"/>
-            <g v-if="combo >= 5 || active[0] || active[1]" fill="none" stroke="#514538" stroke-width="4.5" stroke-linecap="round"><path d="m147 128 9-7 9 7m71 0 9-7 9 7"/></g>
+            <g v-if="combo >= 5 || pawActive[0] || pawActive[1]" fill="none" stroke="#514538" stroke-width="4.5" stroke-linecap="round"><path d="m147 128 9-7 9 7m71 0 9-7 9 7"/></g>
             <g v-else fill="#514538"><ellipse cx="157" cy="126" rx="4.5" ry="7"/><ellipse cx="243" cy="126" rx="4.5" ry="7"/></g>
             <ellipse cx="137" cy="145" rx="15" ry="8" fill="#f7c7b6"/><ellipse cx="263" cy="145" rx="15" ry="8" fill="#f7c7b6"/>
             <path d="m194 135 6 5 6-5" fill="#d89184" stroke="#d89184" stroke-width="3" stroke-linejoin="round"/>
             <path d="M200 141v5q-8 11-16 1m16-1q8 11 16 1" fill="none" stroke="#514538" stroke-width="3.5" stroke-linecap="round"/>
             <path d="m104 132 18 4m-18 8 17-1m157-7 18-4m-17 11 17 1" stroke="#514538" stroke-width="2.5" stroke-linecap="round"/>
-            <g class="drum-art" :class="{ bonk: active[0] }"><path d="m49 187 12 51q46 17 90-1l14-50" fill="#e99c7f" stroke="#514538" stroke-width="4"/><path d="m73 195 5 41m34-36v42m34-47-8 40" stroke="#b7735f" stroke-width="3"/><ellipse cx="107" cy="185" rx="60" ry="21" fill="#ffe3b2" stroke="#514538" stroke-width="4"/><ellipse cx="107" cy="182" rx="49" ry="13" fill="#fff0d2"/></g>
-            <g class="drum-art" :class="{ bonk: active[1] }"><path d="m236 187 13 51q46 17 90-1l14-50" fill="#aaa0cf" stroke="#514538" stroke-width="4"/><path d="m260 195 5 41m34-36v42m34-47-8 40" stroke="#8276a5" stroke-width="3"/><ellipse cx="294" cy="185" rx="60" ry="21" fill="#e9ddff" stroke="#514538" stroke-width="4"/><ellipse cx="294" cy="182" rx="49" ry="13" fill="#f4ecff"/></g>
-            <g class="paw paw-left" :class="{ down: active[0] }"><path d="M148 167q-13-31-32-23q-23 10-13 31q9 18 28 12q15-4 17-20" fill="#fffaf0" stroke="#514538" stroke-width="4"/><path d="m112 167 3 7m5-9 3 7" stroke="#d8c4a7" stroke-width="2.5" stroke-linecap="round"/></g>
-            <g class="paw paw-right" :class="{ down: active[1] }"><path d="M252 167q13-31 32-23q23 10 13 31q-9 18-28 12q-15-4-17-20" fill="#fffaf0" stroke="#514538" stroke-width="4"/><path d="m288 167-3 7m-5-9-3 7" stroke="#d8c4a7" stroke-width="2.5" stroke-linecap="round"/></g>
+            <g class="drum-art" :class="{ bonk: pawActive[0] }"><path d="m49 187 12 51q46 17 90-1l14-50" fill="#e99c7f" stroke="#514538" stroke-width="4"/><path d="m73 195 5 41m34-36v42m34-47-8 40" stroke="#b7735f" stroke-width="3"/><ellipse cx="107" cy="185" rx="60" ry="21" fill="#ffe3b2" stroke="#514538" stroke-width="4"/><ellipse cx="107" cy="182" rx="49" ry="13" fill="#fff0d2"/></g>
+            <g class="drum-art" :class="{ bonk: pawActive[1] }"><path d="m236 187 13 51q46 17 90-1l14-50" fill="#aaa0cf" stroke="#514538" stroke-width="4"/><path d="m260 195 5 41m34-36v42m34-47-8 40" stroke="#8276a5" stroke-width="3"/><ellipse cx="294" cy="185" rx="60" ry="21" fill="#e9ddff" stroke="#514538" stroke-width="4"/><ellipse cx="294" cy="182" rx="49" ry="13" fill="#f4ecff"/></g>
+            <g class="paw paw-left" :class="{ down: pawActive[0] }"><path d="M148 167q-13-31-32-23q-23 10-13 31q9 18 28 12q15-4 17-20" fill="#fffaf0" stroke="#514538" stroke-width="4"/><path d="m112 167 3 7m5-9 3 7" stroke="#d8c4a7" stroke-width="2.5" stroke-linecap="round"/></g>
+            <g class="paw paw-right" :class="{ down: pawActive[1] }"><path d="M252 167q13-31 32-23q23 10 13 31q-9 18-28 12q-15-4-17-20" fill="#fffaf0" stroke="#514538" stroke-width="4"/><path d="m288 167-3 7m-5-9-3 7" stroke="#d8c4a7" stroke-width="2.5" stroke-linecap="round"/></g>
           </svg>
         </div>
 
         <div class="track" :class="{ 'track-idle': phase !== 'playing' }" aria-hidden="true">
-          <div class="lane lane-left"></div><div class="lane lane-right"></div>
-          <div class="hit-line"><span></span><span></span></div>
-          <div v-for="note in visibleNotes" :key="note.id" class="beat" :class="note.side ? 'beat-right' : 'beat-left'" :style="{ top: noteY(note) + '%' }">{{ note.side ? 'L' : 'A' }}</div>
+          <div v-for="(pad, side) in pads" :key="side" class="lane" :style="{ left: side * 20 + '%', '--pad-color': pad.color }"></div>
+          <div class="hit-line"><span v-for="(pad, side) in pads" :key="side" :style="{ borderColor: pad.color }"></span></div>
+          <div v-for="note in visibleNotes" :key="note.id" class="beat" :style="{ top: noteY(note) + '%', left: (note.side * 20 + 10) + '%', background: pads[note.side].color }">{{ pads[note.side].key }}</div>
           <span v-if="phase !== 'playing'" class="track-hint">{{ phase === 'paused' ? '잠깐 쉬는 중 ☾' : '원을 선에 맞춰 톡!' }}</span>
           <span v-else-if="elapsed < 1200" class="track-hint">준비…</span>
           <span v-if="feedback" :key="feedbackId" class="feedback" :class="feedbackKind">{{ feedback }}</span>
         </div>
 
         <div class="pads">
-          <button v-for="(pad, side) in pads" :key="side" class="pad" :class="[{ pressed: active[side] }, side ? 'pad-right' : 'pad-left']" :aria-label="pad.name + ' 봉고, ' + pad.key + ' 키'" @pointerdown.prevent="tap(side)" @click="accessibleTap($event, side)">
-            <span class="pad-caption">{{ pad.name }} 봉고</span><strong>{{ pad.sound }}</strong><span class="keycap">{{ pad.key }}</span>
+          <button v-for="(pad, side) in pads" :key="side" class="pad" :class="{ pressed: active[side], unused: !selectedSong.lanes.includes(side) }" :style="{ '--pad-color': pad.color }" :aria-label="pad.name + ', ' + pad.key + ' 키'" @pointerdown.prevent="tap(side)" @click="accessibleTap($event, side)">
+            <span class="pad-caption">{{ pad.name }}</span><strong>{{ pad.sound }}</strong><span class="keycap">{{ pad.key }}</span>
           </button>
         </div>
-        <div class="studio-bottom"><span>✦ 터치로 톡톡</span><span>키보드는 A · L 또는 ← · →</span></div>
+        <div class="studio-bottom"><span>✦ 터치로 톡톡</span><span>키보드 A · S · D · K · L</span></div>
       </section>
 
       <aside class="session">
@@ -80,16 +80,22 @@
           <div class="score-details"><div><span>콤보</span><strong data-testid="combo">{{ combo }}<small>×</small></strong></div><div><span>{{ phase === 'finished' ? '정확도' : '남은 시간' }}</span><strong>{{ phase === 'finished' ? accuracy + '%' : seconds }}<small v-if="phase !== 'finished'">초</small></strong></div></div>
           <div class="progress" role="progressbar" aria-label="라운드 진행" :aria-valuenow="Math.round(elapsed / duration * 100)" aria-valuemin="0" aria-valuemax="100"><span :style="{ width: elapsed / duration * 100 + '%' }"></span></div>
         </div>
+        <p class="pad-guide">사용 버튼 {{ selectedSong.lanes.map(side => pads[side].key).join(' · ') }}<span>곡을 바꾸면 새로 시작해요.</span></p>
         <p class="playing-song">{{ selectedSong.title }} <span>· {{ difficulty.title }} · {{ chart.length }}개 음표 · 약 {{ Math.ceil(duration / 1000) }}초</span></p>
         <p class="best"><span>♕ 이 곡 · {{ difficulty.title }} 최고 기록</span><strong>{{ best.toLocaleString() }} pt</strong></p>
         <button v-if="phase === 'playing'" class="start-button secondary" @click="pause">잠깐 쉬기 <span>Ⅱ</span></button>
-        <button v-else class="start-button" @click="phase === 'paused' ? resume() : start()">{{ phase === 'paused' ? '이어서 연주하기' : phase === 'finished' ? '한 번 더 연주하기' : '선택한 동요로 시작' }}<span>→</span></button>
+        <button v-else class="start-button" :disabled="phase === 'loading'" @click="phase === 'paused' ? resume() : start()">{{ phase === 'loading' ? '음악 불러오는 중…' : phase === 'paused' ? '이어서 연주하기' : phase === 'finished' ? '한 번 더 연주하기' : '선택한 곡으로 시작' }}<span>→</span></button>
         <button v-if="phase === 'paused' || phase === 'finished'" class="free-button" @click="freePlay">자유 연주로 돌아가기</button>
         <p v-else class="free-note">{{ phase === 'playing' ? '잘못 쳐도 괜찮아요. 계속 두드려 봐요!' : '시작 전에는 자유롭게 연주할 수 있어요.' }}</p>
+        <p v-if="audioError" class="audio-error" role="alert">{{ audioError }}</p>
         <div class="tip"><span aria-hidden="true">♡</span><p>잘하는 것보다 즐거운 게 중요해요.<br><strong>고양이는 언제나 당신 편!</strong></p></div>
         <p class="sr-only" aria-live="polite">{{ announcement }}</p>
       </aside>
     </div>
+    <details class="music-credits"><summary>음악 출처와 라이선스</summary>
+      <p>동요와 클래식은 역사적 멜로디를 직접 합성한 짧은 연주예요. 현대 음원이나 편곡을 복사하지 않았어요.</p>
+      <p v-for="song in SONGS.filter(item => item.credit)" :key="song.id"><a :href="song.credit.source" target="_blank" rel="noopener noreferrer">{{ song.title }}</a> · Kevin MacLeod (incompetech.com) · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a><br>게임용 발췌, 음량 조절과 페이드 적용. 음악의 라이선스는 게임 코드와 별개예요.</p>
+    </details>
     <footer>MADE FOR YOUR PAWS <span>·</span> 작은 리듬이 필요한 모든 순간에</footer>
   </section>
 </template>
@@ -97,18 +103,25 @@
 <script setup>
 /* eslint-env browser, es6 */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { DIFFICULTIES, createNotes, expireNotes, judgeHit } from '../rhythm.mjs'
-import { SONGS, songTimeline } from '../songs.mjs'
+import { APPROACH_MS, HIT_WINDOW, DIFFICULTIES, createNotes, expireNotes, judgeHit } from '../rhythm.mjs'
+import { LEAD_IN_MS, SONGS, songTimeline } from '../songs.mjs'
 
 const selectedId = ref(SONGS[0].id)
-const difficultyId = ref('normal')
+const difficultyId = ref(SONGS[0].difficulty)
 const difficulty = computed(() => DIFFICULTIES.find(level => level.id === difficultyId.value))
 const selectedSong = computed(() => SONGS.find(song => song.id === selectedId.value))
-const chart = computed(() => createNotes(selectedSong.value, difficulty.value))
-const recordKey = computed(() => `bongo-cat-best-v2-${selectedId.value}-${difficultyId.value}`)
+const filteredSongs = computed(() => SONGS.filter(song => song.difficulty === difficultyId.value))
+const chart = computed(() => createNotes(selectedSong.value))
+const recordKey = computed(() => `bongo-cat-best-v3-${selectedId.value}`)
 const timeline = computed(() => songTimeline(selectedSong.value))
 const duration = computed(() => timeline.value.duration)
-const pads = [{ name: '왼쪽', key: 'A', sound: '둥' }, { name: '오른쪽', key: 'L', sound: '탁' }]
+const pads = [
+  { name: '킥', key: 'A', sound: '둥', color: '#eca383', wave: 'sine', high: 180, low: 55 },
+  { name: '스네어', key: 'S', sound: '탁', color: '#e1bb62', wave: 'square', high: 260, low: 95 },
+  { name: '우드블록', key: 'D', sound: '톡', color: '#91b69b', wave: 'triangle', high: 850, low: 600 },
+  { name: '탐', key: 'K', sound: '통', color: '#88accc', wave: 'sine', high: 330, low: 130 },
+  { name: '벨', key: 'L', sound: '챙', color: '#b7a5d9', wave: 'sine', high: 1200, low: 900 },
+]
 const phase = ref('idle')
 const notes = ref([])
 const elapsed = ref(0)
@@ -117,19 +130,22 @@ const combo = ref(0)
 const hits = ref(0)
 const best = ref(0)
 const muted = ref(false)
-const active = ref([false, false])
+const audioError = ref('')
+const active = ref(Array(5).fill(false))
+const pawActive = computed(() => [active.value.slice(0, 3).some(Boolean), active.value.slice(3).some(Boolean)])
 const feedback = ref('')
 const feedbackKind = ref('')
 const feedbackId = ref(0)
-const announcement = ref('동요를 고르고 시작하세요. 시작 전에는 봉고를 자유롭게 연주할 수 있어요.')
+const announcement = ref('난이도별 곡 모음에서 노래를 고르세요. 시작 전에는 봉고를 자유롭게 연주할 수 있어요.')
 const seconds = computed(() => Math.max(0, Math.ceil((duration.value - elapsed.value) / 1000)))
 const accuracy = computed(() => Math.round(hits.value / Math.max(1, notes.value.length) * 100))
-const visibleNotes = computed(() => notes.value.filter(n => !n.hit && !n.missed && n.time - elapsed.value <= difficulty.value.approach && n.time - elapsed.value >= -difficulty.value.hitWindow))
-let frame, startedAt = 0, audioStartedAt = 0, audio, master, feedbackTimer
+const visibleNotes = computed(() => notes.value.filter(n => !n.hit && !n.missed && n.time - elapsed.value <= APPROACH_MS && n.time - elapsed.value >= -HIT_WINDOW))
+let frame, startedAt = 0, audioStartedAt = 0, audio, master, feedbackTimer, startVersion = 0
+const audioBuffers = new Map()
 const voices = new Set()
 const pawTimers = []
 
-function noteY(note) { return 80 - (note.time - elapsed.value) / difficulty.value.approach * 80 }
+function noteY(note) { return 80 - (note.time - elapsed.value) / APPROACH_MS * 80 }
 function ensureAudio() {
   try {
     if (!audio) {
@@ -148,10 +164,10 @@ function sound(side) {
   const now = audio.currentTime
   const osc = audio.createOscillator()
   const gain = audio.createGain()
-  osc.type = 'triangle'
-  osc.frequency.setValueAtTime(side ? 330 : 180, now)
-  osc.frequency.exponentialRampToValueAtTime(side ? 145 : 65, now + 0.12)
-  gain.gain.setValueAtTime(0.45, now)
+  osc.type = pads[side].wave
+  osc.frequency.setValueAtTime(pads[side].high, now)
+  osc.frequency.exponentialRampToValueAtTime(pads[side].low, now + 0.12)
+  gain.gain.setValueAtTime(side === 1 ? 0.12 : 0.38, now)
   gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
   osc.connect(gain)
   gain.connect(master)
@@ -166,7 +182,7 @@ function stopMusic() {
 }
 function playTone(note, offset, bass = false) {
   const remaining = note.time + note.duration - offset
-  if (remaining <= 0) return
+  if (note.midi === null || remaining <= 0) return
   const when = audio.currentTime + Math.max(0, note.time - offset) / 1000
   const length = Math.min(note.duration, remaining) / 1000
   const oscillator = audio.createOscillator()
@@ -187,6 +203,19 @@ function scheduleMusic(offset) {
   stopMusic()
   if (!audio || !master) return
   audioStartedAt = audio.currentTime - offset / 1000
+  if (selectedSong.value.audioFile) {
+    const buffer = audioBuffers.get(selectedId.value)
+    const position = Math.max(0, offset - LEAD_IN_MS) / 1000
+    if (buffer && position < buffer.duration) {
+      const source = audio.createBufferSource()
+      source.buffer = buffer
+      source.connect(master)
+      voices.add(source)
+      source.start(audio.currentTime + Math.max(0, LEAD_IN_MS - offset) / 1000, position)
+      source.onended = () => { voices.delete(source); source.disconnect() }
+    }
+    return
+  }
   timeline.value.melody.forEach(note => playTone(note, offset))
   timeline.value.bass.forEach(note => playTone(note, offset, true))
 }
@@ -205,6 +234,7 @@ function chooseSong(id) {
   if (id === selectedId.value || !SONGS.some(song => song.id === id)) return
   freePlay()
   selectedId.value = id
+  difficultyId.value = selectedSong.value.difficulty
   readBest()
   announcement.value = `${selectedSong.value.title} 선택. 시작 버튼을 눌러 연주하세요.`
 }
@@ -212,6 +242,7 @@ function chooseDifficulty(id) {
   if (id === difficultyId.value || !DIFFICULTIES.some(level => level.id === id)) return
   freePlay()
   difficultyId.value = id
+  selectedId.value = filteredSongs.value[0].id
   readBest()
   announcement.value = `${difficulty.value.title} 선택. ${difficulty.value.description}. 시작 버튼을 눌러 연주하세요.`
 }
@@ -235,8 +266,8 @@ function tap(side) {
   pawTimers[side] = setTimeout(() => { active.value[side] = false }, 120)
   if (phase.value !== 'playing') return
   elapsed.value = currentElapsed()
-  if (expireNotes(notes.value, elapsed.value, difficulty.value)) combo.value = 0
-  const result = judgeHit(notes.value, side, elapsed.value, difficulty.value)
+  if (expireNotes(notes.value, elapsed.value)) combo.value = 0
+  const result = judgeHit(notes.value, side, elapsed.value)
   if (result) {
     combo.value++
     hits.value++
@@ -264,14 +295,34 @@ function finish() {
 function update() {
   if (phase.value !== 'playing') return
   elapsed.value = currentElapsed()
-  if (expireNotes(notes.value, elapsed.value, difficulty.value)) { combo.value = 0; showFeedback('다음 박자에 톡!', 'miss') }
+  if (expireNotes(notes.value, elapsed.value)) { combo.value = 0; showFeedback('다음 박자에 톡!', 'miss') }
   if (elapsed.value >= duration.value) { finish(); return }
   frame = requestAnimationFrame(update)
 }
-function start() {
+async function start() {
   freePlay()
+  const version = startVersion
   ensureAudio()
-  notes.value = createNotes(selectedSong.value, difficulty.value)
+  if (selectedSong.value.audioFile) {
+    phase.value = 'loading'
+    try {
+      if (!audio) throw new Error('Web Audio unavailable')
+      if (!audioBuffers.has(selectedId.value)) {
+        const id = selectedId.value
+        const response = await fetch(process.env.BASE_URL + selectedSong.value.audioFile)
+        if (!response.ok) throw new Error('Audio download failed')
+        const buffer = await audio.decodeAudioData(await response.arrayBuffer())
+        audioBuffers.set(id, buffer)
+      }
+      if (version !== startVersion) return
+    } catch {
+      if (version !== startVersion) return
+      phase.value = 'idle'
+      audioError.value = '음악을 불러오지 못했어요. 연결을 확인한 뒤 시작 버튼으로 다시 시도해 주세요.'
+      return
+    }
+  }
+  notes.value = createNotes(selectedSong.value)
   score.value = 0
   combo.value = 0
   hits.value = 0
@@ -280,7 +331,7 @@ function start() {
   phase.value = 'playing'
   startedAt = performance.now()
   scheduleMusic(0)
-  announcement.value = `${selectedSong.value.title}, ${difficulty.value.title} 연주 시작! 내려오는 원에 맞춰 왼쪽 A, 오른쪽 L 봉고를 치세요.`
+  announcement.value = `${selectedSong.value.title}, ${difficulty.value.title} 연주 시작! 내려오는 원에 맞춰 A, S, D, K, L 버튼을 치세요.`
   frame = requestAnimationFrame(update)
 }
 function pause() {
@@ -302,11 +353,13 @@ function resume() {
   announcement.value = '이어서 연주합니다.'
 }
 function freePlay() {
+  startVersion++
+  audioError.value = ''
   cancelAnimationFrame(frame)
   stopMusic()
   clearTimeout(feedbackTimer)
   pawTimers.forEach(clearTimeout)
-  active.value = [false, false]
+  active.value = Array(5).fill(false)
   hits.value = 0
   phase.value = 'idle'
   notes.value = []
@@ -319,18 +372,21 @@ function freePlay() {
 function keydown(event) {
   if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return
   const key = event.key.toLowerCase()
-  if (['a', 'l', 'arrowleft', 'arrowright'].includes(key)) {
-    event.preventDefault()
-    tap(key === 'a' || key === 'arrowleft' ? 0 : 1)
-  }
+  const side = { a: 0, s: 1, d: 2, k: 3, l: 4, arrowleft: 0, arrowright: 4 }[key]
+  if (side !== undefined) { event.preventDefault(); tap(side) }
 }
-function visibility() { if (document.hidden) pause() }
+function visibility() {
+  if (!document.hidden) return
+  if (phase.value === 'loading') freePlay()
+  else pause()
+}
 onMounted(() => {
   readBest()
   window.addEventListener('keydown', keydown)
   document.addEventListener('visibilitychange', visibility)
 })
 onUnmounted(() => {
+  startVersion++
   cancelAnimationFrame(frame)
   stopMusic()
   clearTimeout(feedbackTimer)
@@ -349,5 +405,7 @@ onUnmounted(() => {
 @media(max-width:360px){.club{padding-left:14px;padding-right:14px}.intro p{font-size:9px}.stage{height:190px}.cat{height:187px}.studio-bottom{font-size:7px}.scoreboard{padding:12px 14px}.score-details>div+div{padding-left:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 .song-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0;margin:0 0 28px;border:0}.song-picker legend{font-size:11px;font-weight:800;margin-bottom:9px;color:#8d806c}.song-picker button{display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #e3dac9;background:#fffdf7;padding:14px;border-radius:15px;min-height:67px}.song-picker button.selected{background:#f0e6d3;border-color:#b79c76;box-shadow:0 2px 0 #cbb48f}.song-picker strong{font-size:12px;display:block}.song-picker small{display:block;color:#988a73;font-size:9px;margin-top:4px}.song-icon{color:#b58b60;font-size:24px}.song-check{margin-left:auto;font-size:14px;color:#a38863}.playing-song{font-size:11px;font-weight:800;margin:12px 0 0}.playing-song span{font-size:9px;color:#9c8f79;font-weight:500}.club{padding-top:12px}@media(max-width:740px){.club{padding-top:10px}.intro{margin-top:22px}.song-picker{gap:7px;margin-bottom:18px}.song-picker button{padding:11px 6px;justify-content:center;text-align:center;min-height:68px;display:block}.song-picker strong{font-size:10px}.song-picker small,.song-check{display:none}.song-icon{display:block;font-size:19px;margin-bottom:5px}.playing-song{font-size:10px}}
-.difficulty-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:0;margin:0;padding:0}.difficulty-picker legend{font-size:11px;font-weight:800;color:#8d806c;margin-bottom:9px}.difficulty-picker button{border:1px solid #e3dac9;border-radius:12px;background:#fffdf7;min-height:54px;padding:10px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:5px}.difficulty-picker strong{font-size:12px}.difficulty-picker small{font-size:10px;color:#988a73}.difficulty-picker button.selected{background:#544b3e;border-color:#544b3e;color:#fffaf1}.difficulty-picker button.selected small{color:#eee2cd}.difficulty-help{font-size:11px;color:#8d806c;margin:10px 0 24px;line-height:1.7}.difficulty-help span{display:block;font-size:9px;color:#a29784}.song-picker{margin-bottom:18px}.difficulty-normal .track{height:130px}.difficulty-hard .track{height:160px}@media(max-width:740px){.difficulty-picker button{display:block;text-align:center;padding:8px 4px}.difficulty-picker small{display:block;margin-top:4px;font-size:9px}.difficulty-help{font-size:10px;margin-bottom:18px}.difficulty-normal .track{height:120px}.difficulty-hard .track{height:145px}}
+.difficulty-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:0;margin:0;padding:0}.difficulty-picker legend{font-size:11px;font-weight:800;color:#8d806c;margin-bottom:9px}.difficulty-picker button{border:1px solid #e3dac9;border-radius:12px;background:#fffdf7;min-height:54px;padding:10px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:5px}.difficulty-picker strong{font-size:12px}.difficulty-picker small{font-size:10px;color:#988a73}.difficulty-picker button.selected{background:#544b3e;border-color:#544b3e;color:#fffaf1}.difficulty-picker button.selected small{color:#eee2cd}.difficulty-help{font-size:11px;color:#8d806c;margin:10px 0 24px;line-height:1.7}.difficulty-help span{display:block;font-size:9px;color:#a29784}.song-picker{margin-bottom:18px}.difficulty-normal .track{height:150px}.difficulty-hard .track{height:190px}@media(max-width:740px){.difficulty-picker button{display:block;text-align:center;padding:8px 4px}.difficulty-picker small{display:block;margin-top:4px;font-size:9px}.difficulty-help{font-size:10px;margin-bottom:18px}.difficulty-normal .track{height:140px}.difficulty-hard .track{height:180px}.song-picker .song-tempo{display:block;font-size:8px}}
+.lane{width:20%;border-right:1px dashed #e2d7c5;background:linear-gradient(0deg,transparent,var(--pad-color));opacity:.16}.hit-line span{width:25px;height:23px}.beat{width:25px;height:25px;font-size:10px}.pads{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.pad{background:var(--pad-color);border-color:#00000015;border-bottom-color:#00000025;min-height:88px}.pad-caption{position:static;display:block;font-size:9px;margin-top:7px}.pad strong{margin:6px 0 4px;text-align:center;font-size:24px}.keycap{position:static;display:block;width:22px;height:20px;line-height:18px;margin:0 auto 6px;font-size:10px}.pad.unused{opacity:.48}.pad-guide{font-size:10px;color:#8d806c;margin:12px 0 0}.pad-guide span{display:block;font-size:9px;margin-top:5px;color:#a29784}@media(max-width:740px){.pads{gap:5px;padding:0 12px}.pad{min-height:80px;border-radius:10px;padding:0}.pad strong{font-size:21px}.pad-caption{font-size:8px}.track{margin-left:12px;margin-right:12px}.keycap{font-size:10px}.studio-bottom{font-size:8px;padding-left:13px;padding-right:13px}.beat{width:23px;height:23px;line-height:20px}.hit-line span{width:24px}.pad-guide{font-size:9px}}
+.start-button:disabled{opacity:.6;cursor:wait}.audio-error{font-size:11px;line-height:1.6;color:#a55342}.music-credits{font-size:10px;line-height:1.7;color:#8d806c;margin-top:30px}.music-credits summary{cursor:pointer}.music-credits a{color:#786851}
 </style>

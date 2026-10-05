@@ -1,43 +1,46 @@
-import { SONGS, songTimeline, LEAD_IN_MS } from './songs.mjs'
+import { SONGS, songTimeline } from './songs.mjs'
 
+// Difficulty belongs to the song, not to a stricter scoring rule.
+export const HIT_WINDOW = 150
+export const PERFECT_WINDOW = 70
+export const APPROACH_MS = 1200
 export const DIFFICULTIES = [
-  { id: 'easy', title: '쉬움', subtitle: '천천히 톡톡', description: '넉넉한 간격 · 왼쪽, 오른쪽 번갈아 · 너그러운 판정', hitWindow: 220, perfectWindow: 110, approach: 1400 },
-  { id: 'normal', title: '보통', subtitle: '멜로디 그대로', description: '모든 멜로디 음 · 같은 손 두 번도 등장 · 정확하게 톡!', hitWindow: 150, perfectWindow: 70, approach: 1200 },
-  { id: 'hard', title: '어려움', subtitle: '촘촘한 도전', description: '반 박자마다 톡톡 · 연타와 엇갈림 · 정교한 타이밍', hitWindow: 100, perfectWindow: 45, approach: 1000 },
+  { id: 'easy', title: '쉬움', subtitle: '차근차근', description: '익숙한 동요 · 여유로운 박자와 짧은 연타' },
+  { id: 'normal', title: '보통', subtitle: '리듬 변화', description: '다채로운 멜로디 · 긴 음, 짧은 음, 쉼표를 따라' },
+  { id: 'hard', title: '어려움', subtitle: '빠른 도전', description: '빠른 리듬 · 촘촘한 음표와 엇박, 교차 연타' },
 ]
 
-export function createNotes(song = SONGS[0], difficulty = DIFFICULTIES[1]) {
-  const timeline = songTimeline(song)
-  const beat = 60000 / song.bpm
-  let times = timeline.melody.map(note => note.time)
-  if (difficulty.id === 'easy') {
-    let last = -Infinity
-    times = times.filter(time => {
-      if (time - last < beat * 1.5 - 1) return false
-      last = time
-      return true
-    })
-  } else if (difficulty.id === 'hard') {
-    // All melodies use whole/half beats: a single rounded grid avoids near-duplicates.
-    const end = timeline.duration - 700
-    for (let i = 0; LEAD_IN_MS + i * beat / 2 < end - 1; i++) times.push(Math.round(LEAD_IN_MS + i * beat / 2))
-    times = [...new Set(times)].sort((a, b) => a - b)
+export function createNotes(song = SONGS[0]) {
+  const melody = songTimeline(song).targets
+  const notes = []
+  for (const [id, note] of melody.entries()) {
+    const previous = notes[id - 1]
+    // Repeated pitches may repeat a pad; quick runs move across the available pads.
+    // A long rest starts a fresh phrase. No generated filler beats.
+    const lanes = song.lanes || [0, 1, 2, 3, 4]
+    let side = previous ? lanes[(lanes.indexOf(previous.side) + 1) % lanes.length] : lanes[0]
+    if (previous && note.time - previous.time > 900) side = lanes[0]
+    else if (song.difficulty !== 'easy' && previous && note.midi !== undefined && note.midi === melody[id - 1].midi && note.time - previous.time >= 300 && (id < 2 || notes[id - 2].side !== previous.side)) side = previous.side
+    notes.push({ id, side, time: note.time, hit: false, missed: false })
   }
-  const pattern = difficulty.id === 'easy' ? [0, 1] : difficulty.id === 'normal' ? [0, 0, 1, 0, 1, 1, 0, 1] : [0, 1, 0, 0, 1, 0, 1, 1]
-  return times.map((time, id) => ({ id, side: pattern[id % pattern.length], time, hit: false, missed: false }))
+  return notes
 }
 
-export function judgeHit(notes, side, elapsed, difficulty = DIFFICULTIES[1]) {
-  const note = notes.find(n => !n.hit && !n.missed && n.side === side && Math.abs(n.time - elapsed) <= difficulty.hitWindow)
-  if (!note) return null
-  note.hit = true
-  return { perfect: Math.abs(note.time - elapsed) <= difficulty.perfectWindow }
+export function judgeHit(notes, side, elapsed) {
+  let nearest
+  for (const note of notes) {
+    if (note.hit || note.missed || note.side !== side || Math.abs(note.time - elapsed) > HIT_WINDOW) continue
+    if (!nearest || Math.abs(note.time - elapsed) < Math.abs(nearest.time - elapsed)) nearest = note
+  }
+  if (!nearest) return null
+  nearest.hit = true
+  return { perfect: Math.abs(nearest.time - elapsed) <= PERFECT_WINDOW }
 }
 
-export function expireNotes(notes, elapsed, difficulty = DIFFICULTIES[1]) {
+export function expireNotes(notes, elapsed) {
   let missed = 0
   for (const note of notes) {
-    if (!note.hit && !note.missed && elapsed - note.time > difficulty.hitWindow) {
+    if (!note.hit && !note.missed && elapsed - note.time > HIT_WINDOW) {
       note.missed = true
       missed++
     }
