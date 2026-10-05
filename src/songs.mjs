@@ -64,13 +64,13 @@ export const SONGS = [
 ]
 
 export const LEAD_IN_MS = 1400
-export function songTimeline(song) {
+export function songTimeline(song, leadInMs = LEAD_IN_MS) {
   if (song.audioFile) return {
     melody: [], bass: [],
-    targets: song.beats.map((beat, id) => ({ id, time: Math.round(LEAD_IN_MS + beat * 60000 / song.bpm) })),
-    duration: LEAD_IN_MS + song.audioDurationMs + 700,
+    targets: song.beats.map((beat, id) => ({ id, side: song.targetLanes[id], time: Math.round(leadInMs + beat * 60000 / song.bpm) })),
+    duration: leadInMs + song.audioDurationMs + 700,
   }
-  let time = LEAD_IN_MS
+  let time = leadInMs
   const melody = song.melody.map((note, id) => {
     const duration = note.beats * 60000 / song.bpm
     const event = { ...note, id, time: Math.round(time), duration }
@@ -80,8 +80,8 @@ export function songTimeline(song) {
   const bass = []
   // The nursery songs retain their quiet original C-major pulse. Classical
   // excerpts are unaccompanied so an invented drone cannot clash with their harmony.
-  for (let beat = 0; song.bassMidi !== undefined && LEAD_IN_MS + beat * 60000 / song.bpm < time - 1; beat += 4) {
-    bass.push({ midi: song.bassMidi, time: LEAD_IN_MS + beat * 60000 / song.bpm, duration: 2 * 60000 / song.bpm })
+  for (let beat = 0; song.bassMidi !== undefined && leadInMs + beat * 60000 / song.bpm < time - 1; beat += 4) {
+    bass.push({ midi: song.bassMidi, time: leadInMs + beat * 60000 / song.bpm, duration: 2 * 60000 / song.bpm })
   }
   return { melody, bass, targets: melody.filter(note => note.midi !== null), duration: time + 700 }
 }

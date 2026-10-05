@@ -1,5 +1,5 @@
 <template>
-  <section class="club" :class="'difficulty-' + difficultyId">
+  <section class="club" :class="['difficulty-' + difficultyId, { 'round-focused': phase !== 'idle' }]">
     <header class="topbar">
       <span class="brand"><span class="brand-icon">♬</span> BONGO CAT<span class="brand-dot">●</span></span>
       <button class="sound-button" :aria-pressed="muted" @click="toggleMute">
@@ -29,6 +29,12 @@
     </fieldset>
     <div class="game-layout">
       <section class="studio" aria-label="고양이 리듬 게임">
+        <div class="mobile-hud">
+          <div class="mobile-song"><strong>{{ selectedSong.title }}</strong><span>{{ score.toLocaleString() }} pt · {{ combo }} 콤보 · {{ phase === 'finished' ? accuracy + '%' : seconds + '초' }}</span></div>
+          <button :aria-label="muted ? '소리 켜기' : '소리 끄기'" :aria-pressed="muted" @click="toggleMute">{{ muted ? '♪̸' : '♪' }}</button>
+          <button :disabled="phase === 'loading'" @click="phase === 'playing' ? pause() : phase === 'paused' ? resume() : start()">{{ phase === 'playing' ? '일시정지' : phase === 'paused' ? '이어하기' : phase === 'loading' ? '준비' : '다시' }}</button>
+          <button @click="freePlay">곡 선택</button>
+        </div>
         <div class="studio-top"><span class="room-label"><i></i> 냥냥 리듬 클럽</span><span class="tempo">{{ difficulty.title }} · {{ selectedSong.bpm }} BPM <span>✦</span></span></div>
         <div class="stage" :class="{ grooving: pawActive[0] || pawActive[1] }">
           <span class="stage-star star-one" aria-hidden="true">✧</span><span class="stage-star star-two" aria-hidden="true">✦</span>
@@ -54,12 +60,12 @@
           </svg>
         </div>
 
-        <div class="track" :class="{ 'track-idle': phase !== 'playing' }" aria-hidden="true">
+        <div ref="trackElement" class="track" :class="{ 'track-idle': phase !== 'playing' }" aria-hidden="true">
           <div v-for="(pad, side) in pads" :key="side" class="lane" :style="{ left: side * 20 + '%', '--pad-color': pad.color }"></div>
-          <div class="hit-line"><span v-for="(pad, side) in pads" :key="side" :style="{ borderColor: pad.color }"></span></div>
-          <div v-for="note in visibleNotes" :key="note.id" class="beat" :style="{ top: noteY(note) + '%', left: (note.side * 20 + 10) + '%', background: pads[note.side].color }">{{ pads[note.side].key }}</div>
-          <span v-if="phase !== 'playing'" class="track-hint">{{ phase === 'paused' ? '잠깐 쉬는 중 ☾' : '원을 선에 맞춰 톡!' }}</span>
-          <span v-else-if="elapsed < 1200" class="track-hint">준비…</span>
+          <div class="hit-line" :style="{ top: hitLineY + 'px' }"><span v-for="(pad, side) in pads" :key="side" :style="{ borderColor: pad.color }"></span></div>
+          <div v-for="note in visibleNotes" :key="note.id" class="beat" :style="{ top: noteY(note) + 'px', left: (note.side * 20 + 10) + '%', background: pads[note.side].color }">{{ pads[note.side].key }}</div>
+          <span v-if="phase !== 'playing'" class="track-hint">{{ phase === 'paused' ? '잠깐 쉬는 중 ☾' : phase === 'finished' ? '연주 끝! ' + score.toLocaleString() + '점 · 정확도 ' + accuracy + '%' : phase === 'loading' ? '연주를 준비하고 있어요…' : '원을 선에 맞춰 톡!' }}</span>
+          <span v-else-if="elapsed < roundLeadIn" class="track-hint">준비 · {{ Math.ceil((roundLeadIn - elapsed) / 1000) }}초</span>
           <span v-if="feedback" :key="feedbackId" class="feedback" :class="feedbackKind">{{ feedback }}</span>
         </div>
 
@@ -102,7 +108,7 @@
 
 <script setup>
 /* eslint-env browser, es6 */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { APPROACH_MS, HIT_WINDOW, DIFFICULTIES, createNotes, expireNotes, judgeHit } from '../rhythm.mjs'
 import { LEAD_IN_MS, SONGS, songTimeline } from '../songs.mjs'
 
@@ -111,9 +117,10 @@ const difficultyId = ref(SONGS[0].difficulty)
 const difficulty = computed(() => DIFFICULTIES.find(level => level.id === difficultyId.value))
 const selectedSong = computed(() => SONGS.find(song => song.id === selectedId.value))
 const filteredSongs = computed(() => SONGS.filter(song => song.difficulty === difficultyId.value))
-const chart = computed(() => createNotes(selectedSong.value))
-const recordKey = computed(() => `bongo-cat-best-v3-${selectedId.value}`)
-const timeline = computed(() => songTimeline(selectedSong.value))
+const roundLeadIn = ref(LEAD_IN_MS)
+const chart = computed(() => createNotes(selectedSong.value, roundLeadIn.value))
+const recordKey = computed(() => `bongo-cat-best-v4-${selectedId.value}`)
+const timeline = computed(() => songTimeline(selectedSong.value, roundLeadIn.value))
 const duration = computed(() => timeline.value.duration)
 const pads = [
   { name: '킥', key: 'A', sound: '둥', color: '#eca383', wave: 'sine', high: 180, low: 55 },
@@ -139,13 +146,30 @@ const feedbackId = ref(0)
 const announcement = ref('난이도별 곡 모음에서 노래를 고르세요. 시작 전에는 봉고를 자유롭게 연주할 수 있어요.')
 const seconds = computed(() => Math.max(0, Math.ceil((duration.value - elapsed.value) / 1000)))
 const accuracy = computed(() => Math.round(hits.value / Math.max(1, notes.value.length) * 100))
-const visibleNotes = computed(() => notes.value.filter(n => !n.hit && !n.missed && n.time - elapsed.value <= APPROACH_MS && n.time - elapsed.value >= -HIT_WINDOW))
+const trackElement = ref(null)
+const trackHeight = ref(86)
+const mobileViewport = ref(false)
+// Preserve the former pixels/second at each difficulty (excluding the 2px border).
+// A taller track adds preview time, rather than making notes faster.
+const fallSpeed = ref(84 * .8 / APPROACH_MS)
+const hitLineY = computed(() => mobileViewport.value && phase.value !== 'idle' ? Math.max(0, trackHeight.value - 24) : trackHeight.value * .8)
+const approachMs = computed(() => hitLineY.value / fallSpeed.value)
+const visibleNotes = computed(() => notes.value.filter(n => !n.hit && !n.missed && n.time - elapsed.value <= approachMs.value && n.time - elapsed.value >= -HIT_WINDOW))
+let trackObserver
+function measureTrack() {
+  mobileViewport.value = window.matchMedia('(max-width: 740px)').matches
+  if (trackElement.value) trackHeight.value = trackElement.value.clientHeight
+}
+function setFallSpeed() {
+  const heights = mobileViewport.value ? { easy: 86, normal: 140, hard: 180 } : { easy: 107, normal: 150, hard: 190 }
+  fallSpeed.value = (heights[difficultyId.value] - 2) * .8 / APPROACH_MS
+}
 let frame, startedAt = 0, audioStartedAt = 0, audio, master, feedbackTimer, startVersion = 0
 const audioBuffers = new Map()
 const voices = new Set()
 const pawTimers = []
 
-function noteY(note) { return 80 - (note.time - elapsed.value) / APPROACH_MS * 80 }
+function noteY(note) { return hitLineY.value - (note.time - elapsed.value) * fallSpeed.value }
 function ensureAudio() {
   try {
     if (!audio) {
@@ -205,13 +229,13 @@ function scheduleMusic(offset) {
   audioStartedAt = audio.currentTime - offset / 1000
   if (selectedSong.value.audioFile) {
     const buffer = audioBuffers.get(selectedId.value)
-    const position = Math.max(0, offset - LEAD_IN_MS) / 1000
+    const position = Math.max(0, offset - roundLeadIn.value) / 1000
     if (buffer && position < buffer.duration) {
       const source = audio.createBufferSource()
       source.buffer = buffer
       source.connect(master)
       voices.add(source)
-      source.start(audio.currentTime + Math.max(0, LEAD_IN_MS - offset) / 1000, position)
+      source.start(audio.currentTime + Math.max(0, roundLeadIn.value - offset) / 1000, position)
       source.onended = () => { voices.delete(source); source.disconnect() }
     }
     return
@@ -303,6 +327,7 @@ async function start() {
   freePlay()
   const version = startVersion
   ensureAudio()
+  phase.value = 'loading'
   if (selectedSong.value.audioFile) {
     phase.value = 'loading'
     try {
@@ -322,7 +347,12 @@ async function start() {
       return
     }
   }
-  notes.value = createNotes(selectedSong.value)
+  await nextTick()
+  if (version !== startVersion) return
+  measureTrack()
+  setFallSpeed()
+  roundLeadIn.value = Math.max(LEAD_IN_MS, Math.ceil(approachMs.value + 200))
+  notes.value = createNotes(selectedSong.value, roundLeadIn.value)
   score.value = 0
   combo.value = 0
   hits.value = 0
@@ -362,6 +392,7 @@ function freePlay() {
   active.value = Array(5).fill(false)
   hits.value = 0
   phase.value = 'idle'
+  roundLeadIn.value = LEAD_IN_MS
   notes.value = []
   elapsed.value = 0
   score.value = 0
@@ -382,6 +413,12 @@ function visibility() {
 }
 onMounted(() => {
   readBest()
+  measureTrack()
+  if (typeof ResizeObserver !== 'undefined') {
+    trackObserver = new ResizeObserver(measureTrack)
+    if (trackElement.value) trackObserver.observe(trackElement.value)
+  }
+  window.addEventListener('resize', measureTrack)
   window.addEventListener('keydown', keydown)
   document.addEventListener('visibilitychange', visibility)
 })
@@ -391,6 +428,8 @@ onUnmounted(() => {
   stopMusic()
   clearTimeout(feedbackTimer)
   pawTimers.forEach(clearTimeout)
+  if (trackObserver) trackObserver.disconnect()
+  window.removeEventListener('resize', measureTrack)
   window.removeEventListener('keydown', keydown)
   document.removeEventListener('visibilitychange', visibility)
   if (audio) audio.close().catch(() => {})
@@ -408,4 +447,34 @@ onUnmounted(() => {
 .difficulty-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:0;margin:0;padding:0}.difficulty-picker legend{font-size:11px;font-weight:800;color:#8d806c;margin-bottom:9px}.difficulty-picker button{border:1px solid #e3dac9;border-radius:12px;background:#fffdf7;min-height:54px;padding:10px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:5px}.difficulty-picker strong{font-size:12px}.difficulty-picker small{font-size:10px;color:#988a73}.difficulty-picker button.selected{background:#544b3e;border-color:#544b3e;color:#fffaf1}.difficulty-picker button.selected small{color:#eee2cd}.difficulty-help{font-size:11px;color:#8d806c;margin:10px 0 24px;line-height:1.7}.difficulty-help span{display:block;font-size:9px;color:#a29784}.song-picker{margin-bottom:18px}.difficulty-normal .track{height:150px}.difficulty-hard .track{height:190px}@media(max-width:740px){.difficulty-picker button{display:block;text-align:center;padding:8px 4px}.difficulty-picker small{display:block;margin-top:4px;font-size:9px}.difficulty-help{font-size:10px;margin-bottom:18px}.difficulty-normal .track{height:140px}.difficulty-hard .track{height:180px}.song-picker .song-tempo{display:block;font-size:8px}}
 .lane{width:20%;border-right:1px dashed #e2d7c5;background:linear-gradient(0deg,transparent,var(--pad-color));opacity:.16}.hit-line span{width:25px;height:23px}.beat{width:25px;height:25px;font-size:10px}.pads{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.pad{background:var(--pad-color);border-color:#00000015;border-bottom-color:#00000025;min-height:88px}.pad-caption{position:static;display:block;font-size:9px;margin-top:7px}.pad strong{margin:6px 0 4px;text-align:center;font-size:24px}.keycap{position:static;display:block;width:22px;height:20px;line-height:18px;margin:0 auto 6px;font-size:10px}.pad.unused{opacity:.48}.pad-guide{font-size:10px;color:#8d806c;margin:12px 0 0}.pad-guide span{display:block;font-size:9px;margin-top:5px;color:#a29784}@media(max-width:740px){.pads{gap:5px;padding:0 12px}.pad{min-height:80px;border-radius:10px;padding:0}.pad strong{font-size:21px}.pad-caption{font-size:8px}.track{margin-left:12px;margin-right:12px}.keycap{font-size:10px}.studio-bottom{font-size:8px;padding-left:13px;padding-right:13px}.beat{width:23px;height:23px;line-height:20px}.hit-line span{width:24px}.pad-guide{font-size:9px}}
 .start-button:disabled{opacity:.6;cursor:wait}.audio-error{font-size:11px;line-height:1.6;color:#a55342}.music-credits{font-size:10px;line-height:1.7;color:#8d806c;margin-top:30px}.music-credits summary{cursor:pointer}.music-credits a{color:#786851}
+
+.mobile-hud{display:none}
+@media(max-width:740px){
+  .club.round-focused{position:fixed;inset:0;z-index:10;max-width:none;width:100%;height:100vh;height:100dvh;padding:0;background:var(--paper);overflow:hidden}
+  .round-focused>.topbar,.round-focused>.intro,.round-focused>.difficulty-picker,.round-focused>.difficulty-help,.round-focused>.song-picker,.round-focused>.music-credits,.round-focused>footer{display:none}
+  .round-focused .game-layout{display:block;height:100%}
+  .round-focused .session{display:none}
+  .round-focused .studio{height:100%;display:flex;flex-direction:column;border:0;border-radius:0;box-shadow:none;padding:env(safe-area-inset-top) max(0px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left))}
+  .round-focused .mobile-hud{display:flex;align-items:center;gap:4px;padding:6px 10px;min-height:58px;flex-shrink:0}
+  .mobile-song{flex:1;min-width:0;padding-left:48px}
+  .mobile-song strong,.mobile-song span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-song strong{font-size:11px}.mobile-song span{font-size:9px;color:#8d806c;margin-top:4px}
+  .mobile-hud button{height:44px;min-width:44px;padding:0 7px;border:1px solid #e3dac9;border-radius:10px;background:#f2ede2;font-size:10px;font-weight:800}
+  .mobile-hud button:disabled{opacity:.5}
+  .round-focused .studio-top,.round-focused .studio-bottom{display:none}
+  .round-focused .stage{position:absolute;z-index:1;top:calc(env(safe-area-inset-top) + 6px);left:7px;width:47px;height:44px;pointer-events:none;background:none}
+  .round-focused .stage>span,.round-focused .speech{display:none}
+  .round-focused .cat{width:100%;height:44px;left:0;bottom:0}
+  .round-focused .track{flex:1;min-height:0;height:auto;margin:0 10px 8px;border-radius:12px}
+  .round-focused .track-hint{top:20px;font-size:11px;padding:0 10px;line-height:1.7}
+  .round-focused .feedback{top:44%;font-size:14px}
+  .round-focused .pads{flex-shrink:0;padding:0 10px;gap:5px}
+  .round-focused .pad{height:76px;min-height:76px}
+}
+@media(max-width:360px){.mobile-song{padding-left:0}.round-focused .stage{display:none}}
+@media(max-width:740px) and (max-height:450px){
+  .round-focused .mobile-hud{min-height:48px;padding-top:2px;padding-bottom:2px}
+  .round-focused .pad{height:58px;min-height:58px}.round-focused .pad-caption{display:none}
+  .round-focused .pad strong{font-size:19px;margin:4px 0 1px}.round-focused .keycap{margin-bottom:2px}
+}
 </style>

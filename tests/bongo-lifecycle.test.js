@@ -7,6 +7,7 @@ async function check() {
   const songs = await import('../src/songs.mjs')
   const source = fs.readFileSync('src/components/BongoGame.vue', 'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '')
   const mounts = [], unmounts = [], voices = [], frames = new Map(), listeners = new Set(), storage = new Map(), timers = new Map()
+  let mobile = false, observerDisconnected = false
   let context, clock = 0, nextId = 0, fetchMode = 'ok', releaseFetch, downloads = 0
   const parameter = () => ({ value: 0, setValueAtTime(value) { this.value = value }, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} })
   const voice = type => {
@@ -25,9 +26,11 @@ async function check() {
   const fakeEvents = { addEventListener: (event, fn) => listeners.add(fn), removeEventListener: (event, fn) => listeners.delete(fn) }
   const args = {
     ...rhythm, ...songs,
+    ResizeObserver: class { observe() {} disconnect() { observerDisconnected = true } },
+    nextTick: () => Promise.resolve(),
     ref: value => ({ value }), computed: fn => ({ get value() { return fn() } }),
     onMounted: fn => mounts.push(fn), onUnmounted: fn => unmounts.push(fn),
-    window: { AudioContext, ...fakeEvents }, document: { hidden: false, ...fakeEvents },
+    window: { AudioContext, matchMedia: () => ({ matches: mobile }), ...fakeEvents }, document: { hidden: false, ...fakeEvents },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     performance: { now: () => clock }, process: { env: { BASE_URL: '/sample-vue/' } },
     fetch: async file => {
@@ -38,7 +41,7 @@ async function check() {
     requestAnimationFrame: fn => { frames.set(++nextId, fn); return nextId }, cancelAnimationFrame: id => frames.delete(id),
     setTimeout: fn => { timers.set(++nextId, fn); return nextId }, clearTimeout: id => timers.delete(id),
   }
-  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers };')(...Object.values(args))
+  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
   mounts.forEach(fn => fn())
   assert.equal(context, undefined, 'audio never starts before a gesture')
   assert.equal(game.pads.length, 5)
@@ -46,6 +49,7 @@ async function check() {
   assert.deepEqual(game.pads.map(p => p.key), ['A', 'S', 'D', 'K', 'L'])
   storage.set('bongo-cat-best-twinkle', '12345')
   storage.set('bongo-cat-best-v2-twinkle-hard', '23456')
+  storage.set('bongo-cat-best-v3-twinkle', '34567')
   const records = new Map()
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
@@ -78,7 +82,7 @@ async function check() {
     assert.equal(frames.size, 0)
     assert.equal(game.best.value, expected)
     records.set(song.id, expected)
-    assert.equal(storage.get(`bongo-cat-best-v3-${song.id}`), String(expected))
+    assert.equal(storage.get(`bongo-cat-best-v4-${song.id}`), String(expected))
     await game.start()
     assert.equal(game.score.value, 0)
     assert.equal(game.hits.value, 0)
@@ -104,6 +108,7 @@ async function check() {
   assert.equal(downloads, 3, 'recordings are cached for replay')
   assert.equal(storage.get('bongo-cat-best-twinkle'), '12345')
   assert.equal(storage.get('bongo-cat-best-v2-twinkle-hard'), '23456')
+  assert.equal(storage.get('bongo-cat-best-v3-twinkle'), '34567')
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
     assert.equal(game.best.value, records.get(song.id), '12 song records restore independently')
@@ -140,6 +145,51 @@ async function check() {
   args.document.hidden = true; game.visibility()
   assert.equal(game.phase.value, 'paused')
   args.document.hidden = false
+  // A phone-sized playing field gives more preview, without accelerating the notes.
+  mobile = true
+  game.trackElement.value = { clientHeight: 680 }
+  for (const id of ['twinkle', 'elise', 'turkish', 'electrodoodle']) {
+    game.chooseSong(id)
+    await game.start()
+    const song = songs.SONGS.find(s => s.id === id)
+    const oldHeight = { easy: 86, normal: 140, hard: 180 }[song.difficulty]
+    assert.equal(game.fallSpeed.value, (oldHeight - 2) * .8 / rhythm.APPROACH_MS)
+    assert.equal(game.hitLineY.value, 656)
+    assert.ok(game.approachMs.value > rhythm.APPROACH_MS * 3)
+    assert.equal(game.roundLeadIn.value, Math.ceil(game.approachMs.value + 200))
+    assert.deepEqual(game.notes.value, rhythm.createNotes(song, game.roundLeadIn.value))
+    const first = game.notes.value[0]
+    assert.ok(first.time >= game.approachMs.value + 200, 'first note gets a full approach')
+    game.elapsed.value = first.time - 500
+    const y = game.noteY(first)
+    game.elapsed.value += 100
+    assert.ok(Math.abs(game.noteY(first) - y - game.fallSpeed.value * 100) < 1e-8)
+    game.elapsed.value = first.time
+    assert.equal(game.noteY(first), game.hitLineY.value, 'hit center and audio clock agree')
+    if (song.audioFile) {
+      assert.equal(voices.at(-1).when, context.currentTime + game.roundLeadIn.value / 1000)
+      context.currentTime += (game.roundLeadIn.value + 700) / 1000
+      game.pause()
+      const paused = game.elapsed.value
+      context.currentTime += 5
+      game.resume()
+      assert.equal(voices.at(-1).offset, (paused - game.roundLeadIn.value) / 1000, 'long-preview audio resumes in sync')
+    }
+    const speed = game.fallSpeed.value, lead = game.roundLeadIn.value
+    game.pause()
+    game.trackElement.value.clientHeight = 560
+    game.measureTrack()
+    assert.equal(game.fallSpeed.value, speed, 'viewport resize never accelerates notes')
+    assert.equal(game.roundLeadIn.value, lead, 'resize never rewrites the song clock')
+    game.resume()
+    game.trackElement.value.clientHeight = 680
+    game.measureTrack()
+    game.freePlay()
+    assert.equal(game.roundLeadIn.value, songs.LEAD_IN_MS)
+  }
+  mobile = false
+  game.trackElement.value = null
+  game.measureTrack()
   // Failed download is retryable; stale asynchronous loads cannot start a different song.
   const recording = songs.SONGS.find(s => s.audioFile)
   game.audioBuffers.clear(); game.chooseSong(recording.id); fetchMode = 'fail'
@@ -163,10 +213,11 @@ async function check() {
   args.document.hidden = false; fetchMode = 'ok'; await game.start()
   unmounts.forEach(fn => fn())
   assert.equal(context.state, 'closed')
+  assert.equal(observerDisconnected, true, 'track resize observer is cleaned up')
   assert.equal(listeners.size, 0)
   assert.equal(frames.size, 0)
   assert.equal(timers.size, 0)
   assert.ok(voices.every(v => v.cancelled), 'exit stops all music')
-  console.log('Lifecycle passed: 12 perfect rounds, record isolation, five keys/sounds, cache/seek, pause/resume, mute, replay, selection changes, load failure/retry/races, background pause, and exit cleanup.')
+  console.log('Lifecycle passed: 12 perfect rounds, record isolation, five keys/sounds, cache/seek, pause/resume, mute, replay, selection changes, load failure/retry/races, background pause, phone viewport preview/speed/resize, and exit cleanup.')
 }
 check().catch(error => { console.error(error); process.exitCode = 1 })

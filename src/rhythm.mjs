@@ -1,4 +1,5 @@
-import { SONGS, songTimeline } from './songs.mjs'
+/* eslint-env es6 */
+import { LEAD_IN_MS, SONGS, songTimeline } from './songs.mjs'
 
 // Difficulty belongs to the song, not to a stricter scoring rule.
 export const HIT_WINDOW = 150
@@ -10,18 +11,34 @@ export const DIFFICULTIES = [
   { id: 'hard', title: '어려움', subtitle: '빠른 도전', description: '빠른 리듬 · 촘촘한 음표와 엇박, 교차 연타' },
 ]
 
-export function createNotes(song = SONGS[0]) {
-  const melody = songTimeline(song).targets
+export function createNotes(song = SONGS[0], leadInMs = LEAD_IN_MS) {
+  const melody = songTimeline(song, leadInMs).targets
+  const lanes = song.lanes || [0, 1, 2, 3, 4]
+  const pitches = [...new Set(melody.map(note => note.midi).filter(Number.isFinite))].sort((a, b) => a - b)
+  const lastLane = Array(lanes.length).fill(-Infinity)
   const notes = []
   for (const [id, note] of melody.entries()) {
     const previous = notes[id - 1]
-    // Repeated pitches may repeat a pad; quick runs move across the available pads.
-    // A long rest starts a fresh phrase. No generated filler beats.
-    const lanes = song.lanes || [0, 1, 2, 3, 4]
-    let side = previous ? lanes[(lanes.indexOf(previous.side) + 1) % lanes.length] : lanes[0]
-    if (previous && note.time - previous.time > 900) side = lanes[0]
-    else if (song.difficulty !== 'easy' && previous && note.midi !== undefined && note.midi === melody[id - 1].midi && note.time - previous.time >= 300 && (id < 2 || notes[id - 2].side !== previous.side)) side = previous.side
-    notes.push({ id, side, time: note.time, hit: false, missed: false })
+    const previousLane = previous ? lanes.indexOf(previous.side) : -1
+    const direction = previous ? Math.sign(note.midi - melody[id - 1].midi) : 0
+    // Low pitches sit on the left, high pitches on the right. The smaller
+    // nursery layouts group pitches; fuller layouts also preserve small turns.
+    let lane = note.side === undefined
+      ? Math.round(Math.max(0, pitches.indexOf(note.midi)) * (lanes.length - 1) / Math.max(1, pitches.length - 1))
+      : lanes.indexOf(note.side)
+    if (note.midi !== undefined && previous) {
+      if (direction === 0 && note.time - previous.time >= 220) lane = previousLane
+      else if (direction !== 0 && lanes.length >= 4 && direction * (lane - previousLane) <= 0) {
+        lane = Math.max(0, Math.min(lanes.length - 1, previousLane + direction))
+      }
+    }
+    // Keep every onset. Fast repeats borrow the nearest available pad instead
+    // of making an unfair same-pad jack or marching around all five pads.
+    const available = lanes.map((_, index) => index).filter(index => note.time - lastLane[index] >= 220)
+    available.sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane) || (direction || 1) * (b - a))
+    lane = available[0]
+    lastLane[lane] = note.time
+    notes.push({ id, side: lanes[lane], time: note.time, hit: false, missed: false })
   }
   return notes
 }

@@ -3,6 +3,8 @@
 // Each row is one 4/4 bar. Values are selected audible attacks in quarter-note
 // units, not a generated eighth-note grid. Empty space deliberately has no target.
 // The small measured source attack offset is retained relative to the MP3 buffer.
+// targetLanes has one matching row per bar: authored phrase/accent gestures,
+// not a pitch transcription of the recordings. Repeated sections recall motifs.
 const onsets = (bpm, firstBeatMs, bars) => bars.flatMap((bar, index) =>
   bar.map(beat => index * 4 + beat + firstBeatMs * bpm / 60000))
 
@@ -31,6 +33,24 @@ export const RECORDED_SONGS = [
       [0, .75, 2.5, 3, 3.5],
       [0, 1, 2],
     ]),
+    targetLanes: [
+      [1, 1, 3, 4, 2],
+      [1, 2, 4, 3, 1, 2],
+      [3, 3, 4, 2, 0],
+      [1, 1, 3, 4, 2],
+      [0, 0, 2, 1],
+      [1, 2, 3, 2, 0],
+      [1, 2, 3, 2, 0],
+      [1, 2, 3, 4, 2],
+      [1, 1, 2, 3, 4],
+      [0, 2, 1, 2, 3, 4],
+      [1, 1, 2, 3, 4],
+      [4, 2, 2, 0],
+      [1, 1, 0, 2, 3, 4],
+      [0, 2, 1, 2, 3, 4],
+      [1, 1, 2, 3, 4],
+      [3, 1, 0],
+    ].flat(),
     credit: {
       title: 'Electrodoodle', artist: 'Kevin MacLeod', isrc: 'USUAN1200079',
       source: 'https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1200079',
@@ -63,6 +83,24 @@ export const RECORDED_SONGS = [
       [.25, 1, 1.75, 3.25],
       [.25, 1, 1.75],
     ]),
+    targetLanes: [
+      [1, 3, 1, 4, 2],
+      [1, 3, 1, 4, 0],
+      [0, 2, 0, 3, 1],
+      [1, 3, 1, 4, 0],
+      [0, 1, 3, 1, 4, 2],
+      [1, 3, 1, 4, 0],
+      [0, 2, 0, 3, 1],
+      [1, 3, 1, 4, 0],
+      [1, 3, 1, 2],
+      [1, 3, 1, 4, 2],
+      [0, 2, 0, 1],
+      [1, 3, 1, 4, 2],
+      [1, 3, 1, 2],
+      [0, 2, 0, 3, 1],
+      [1, 3, 1, 2],
+      [2, 1, 0],
+    ].flat(),
     credit: {
       title: 'Disco Medusae', artist: 'Kevin MacLeod', isrc: 'USUAN1500041',
       source: 'https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500041',
@@ -96,6 +134,24 @@ export const RECORDED_SONGS = [
       [0, .5, .75, 1, 1.5, 2, 2.25, 2.5, 3, 3.5],
       [0, .5, .75, 1, 1.5, 2],
     ]),
+    targetLanes: [
+      [0, 2, 3, 2, 4, 3, 1],
+      [0, 2, 3, 2, 4, 3, 1],
+      [1, 3, 4, 3, 2, 1, 0],
+      [0, 2, 3, 2, 4, 3, 1],
+      [0, 2, 3, 2, 4, 3, 1],
+      [1, 3, 4, 3, 2, 1, 0],
+      [0, 2, 3, 2, 4, 3, 1],
+      [0, 2, 3, 2, 4, 3, 1, 2],
+      [0, 1, 2, 3, 2, 4, 3, 2, 1, 2],
+      [0, 1, 2, 3, 2, 4, 3, 2, 1, 2],
+      [1, 2, 3, 4, 3, 2, 1, 2, 0, 1],
+      [0, 1, 2, 3, 2, 4, 3, 2, 1, 2],
+      [0, 1, 2, 3, 2, 4, 3, 2, 1, 2],
+      [1, 2, 3, 4, 3, 2, 1, 2, 0, 1],
+      [0, 1, 2, 3, 2, 4, 3, 2, 1, 2],
+      [3, 2, 3, 2, 1, 0],
+    ].flat(),
     credit: {
       title: 'EDM Detection Mode', artist: 'Kevin MacLeod', isrc: 'USUAN1500026',
       source: 'https://incompetech.com/music/royalty-free/index.html?Search=Search&isrc=USUAN1500026',
