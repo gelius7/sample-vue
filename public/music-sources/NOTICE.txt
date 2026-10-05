@@ -1,0 +1,20 @@
+The game's MIT code license does not relicense third-party music or score data.
+
+Spring score data (src/scores/spring.mjs):
+Antonio Vivaldi, RV 269 first movement. Typeset by Anonymous, Mutopia-2010/02/08-301, copyright 2010.
+Creative Commons Attribution-ShareAlike 3.0 Unported:
+https://creativecommons.org/licenses/by-sa/3.0/
+Source: https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=301
+Adaptation: complete five-part MIDI converted to millisecond tuples; game tempo 88 BPM rather than source nominal 115 BPM; lead targets selected for playability. The adapted score data remains CC BY-SA 3.0.
+
+William Tell score data (src/scores/tell.mjs):
+Gioachino Rossini; Midica transcription by Jan Trukenmüller.
+Mozilla Public License 2.0: see MPL-2.0.txt.
+Source: https://github.com/truj/midica/blob/master/examples/rossini_william_tell_overture_finale-lowlevel.midica
+Adaptation: full polyphonic finale parsed into millisecond note tuples; 22 historically verified flute notes corrected down an octave; lead targets selected for playability. The adapted score data remains MPL-2.0.
+Original editable notation is included as william-tell-source.midica and william-tell-highlevel.midica; exact octave changes are included as william-tell-corrections.json. The adapted editable source is available in this repository at src/scores/tell.mjs:
+https://github.com/gelius7/sample-vue/blob/master/src/scores/tell.mjs
+
+Für Elise and Rondo alla turca editions are explicitly dedicated to the public domain by their Mutopia typesetters. The nursery/Ode historical compositions and editions, and Offenbach ca.1880 source edition, are public domain. See CREDITS.md for scope, transformations and precise sources.
+
+Kevin MacLeod recordings retain CC BY 4.0: see ../audio/CREDITS.md.

@@ -1,6 +1,7 @@
 /* eslint-env es6 */
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const { createHash } = require('node:crypto')
 async function check() {
   const { createNotes, judgeHit, expireNotes, DIFFICULTIES, HIT_WINDOW, PERFECT_WINDOW, APPROACH_MS } = await import('../src/rhythm.mjs')
   const { SONGS, songTimeline, LEAD_IN_MS } = await import('../src/songs.mjs')
@@ -8,8 +9,8 @@ async function check() {
   assert.equal(new Set(SONGS.map(s => s.id)).size, 12)
   assert.deepEqual(DIFFICULTIES.map(d => d.id), ['easy', 'normal', 'hard'])
   assert.ok(LEAD_IN_MS >= APPROACH_MS)
-  const targetCounts = [168, 256, 208, 240, 280, 292, 608, 672, 488, 387, 364, 699]
-  assert.deepEqual(SONGS.map(song => createNotes(song).length), targetCounts, 'all 12 extended arrangements preserve their complete authored charts')
+  const targetCounts = [42, 32, 26, 63, 549, 773, 1128, 934, 474, 387, 455, 889]
+  assert.deepEqual(SONGS.map(song => createNotes(song).length), targetCounts, 'all 12 source-form charts preserve their verified target counts')
   const density = { easy: [], normal: [], hard: [] }
   for (const song of SONGS) {
     const timeline = songTimeline(song), notes = createNotes(song)
@@ -27,7 +28,7 @@ async function check() {
     assert.deepEqual(createNotes(song, LEAD_IN_MS + extraLeadIn), notes.map(note => ({ ...note, time: note.time + extraLeadIn })))
     assert.ok(DIFFICULTIES.some(d => d.id === song.difficulty))
     const musicDuration = timeline.duration - LEAD_IN_MS - 700
-    assert.ok(musicDuration >= 90000 && musicDuration <= 180000.001, song.id + ' contains 90–180 seconds of music, excluding approach and result tail')
+    assert.ok(musicDuration >= 10000 && musicDuration <= 240000.001, song.id + ' follows its real form within the four-minute music cap')
     assert.ok(notes.at(-1).time > LEAD_IN_MS + musicDuration - 3000, song.id + ' remains playable through its closing phrase')
     assert.ok(notes.at(-1).time + HIT_WINDOW < timeline.duration)
     assert.equal(notes.length, timeline.targets.length, 'no filler notes or rest targets')
@@ -47,25 +48,50 @@ async function check() {
       song.lanes.indexOf(note.side) === (song.lanes.indexOf(notes[i].side) + 1) % song.lanes.length)
     assert.ok(cyclicSteps.length < (notes.length - 1) * .65, song.id + ' is not a cyclic lane walk')
     if (song.audioFile) {
-      assert.ok(song.audioFile.endsWith('-long.mp3'), 'new asset URLs cannot reuse cached short excerpts')
-      const audioBytes = fs.statSync('public/' + song.audioFile).size
-      assert.ok(audioBytes > 2000000 && audioBytes < 3100000, 'full-length 128 kbps MP3 stays mobile-sized')
+      const recordings = {
+        electrodoodle: ['audio/electrodoodle-long.mp3', '3933bdcd67821ac168178f3e75cda27549818c7e49e4b4347ec615c5a53e810d'],
+        'disco-medusae': ['audio/disco-medusae-complete.mp3', '0957c02613a361cd89b3f95ab8d0e708ded2849cc28787202e7a46931ff4bace'],
+        'edm-detection-mode': ['audio/edm-detection-mode-opening.mp3', '3c93aa92e84d2648aa364f94d54f9a0eb903d15530e255badecf2dd66788246c'],
+      }
+      const [filename, sha256] = recordings[song.id]
+      assert.equal(song.audioFile, filename, 'restored recordings use distinct cache-safe URLs')
+      const audio = fs.readFileSync('public/' + filename)
+      assert.equal(createHash('sha256').update(audio).digest('hex'), sha256, 'verified recording bytes are unchanged')
+      assert.ok(audio.length > 2000000 && audio.length < 4000000, '128 kbps recordings stay below 4 MB each')
+      if (song.id !== 'electrodoodle') {
+        assert.equal(song.sourceStartMs, 0, 'recording begins at its original introduction')
+        assert.equal(song.isExcerpt, song.audioDurationMs < song.sourceDurationMs)
+        if (song.isExcerpt) assert.ok(song.subtitle.includes('발췌'), 'shortened recordings are labeled as excerpts')
+      }
       assert.equal(musicDuration, song.audioDurationMs)
       assert.ok(song.beats.some(beat => beat * 60000 / song.bpm > 150000), 'recorded chart continues beyond the old short excerpt')
       assert.ok(song.beats.at(-1) * 60000 / song.bpm + HIT_WINDOW < song.audioDurationMs)
       assert.ok(song.credit.source.startsWith('https://'))
       assert.equal(song.targetLanes.length, notes.length, 'every recorded onset has an authored lane')
       assert.deepEqual(notes.map(note => note.side), song.targetLanes, 'recorded bar motifs are playable unchanged')
+    } else if (song.score) {
+      assert.equal(timeline.melody.length, song.score.sourcePlaybackCount, 'all source accompaniment and melody notes survive')
+      assert.equal(timeline.bass.length, 0, 'no invented drone is added to complete scores')
+      const onsetKeys = new Set(timeline.melody.map(note => `${note.time}:${note.midi}`))
+      timeline.targets.forEach(note => assert.ok(onsetKeys.has(`${note.time}:${note.midi}`), 'every game target belongs to an actual played note'))
+      assert.ok(song.score.sections.length >= 3, 'contrasting sections and cadence are represented')
+      assert.equal(song.score.sections[0].time, 0)
+      assert.ok(song.score.sections.at(-1).time > song.score.durationMs * .7)
+      timeline.melody.forEach((note, i) => {
+        assert.ok(note.duration > 0 && note.time + note.duration <= LEAD_IN_MS + musicDuration + 1)
+        assert.ok(Number.isInteger(note.midi) && note.midi >= 0 && note.midi <= 127)
+        assert.ok(note.gain > 0 && note.gain <= .16)
+        assert.ok(i === 0 || note.time >= timeline.melody[i - 1].time)
+      })
+      assert.ok(song.credit.source.startsWith('https://') && song.credit.licenseUrl.startsWith('https://'))
     } else {
-      assert.ok(song.melody.every(n => (n.midi === null || Number.isInteger(n.midi)) && n.beats > 0))
+      assert.ok(song.melody.every(n => Number.isInteger(n.midi) && n.beats > 0))
       assert.ok(timeline.targets.every(n => n.midi !== null))
-      const themeLength = song.melody.length / 4
-      assert.ok(Number.isInteger(themeLength))
-      for (let reprise = 1; reprise < 4; reprise++) {
-        assert.deepEqual(song.melody.slice(reprise * themeLength, (reprise + 1) * themeLength), song.melody.slice(0, themeLength), 'extended synth arrangement reprises the actual theme and rests')
-      }
+      const expectedBeats = { twinkle: 48, jacques: 32, mary: 32, ode: 64 }
+      assert.equal(song.melody.reduce((sum, note) => sum + note.beats, 0), expectedBeats[song.id], 'one complete short tune/theme, with no extra whole-tune loops')
+      assert.ok(musicDuration < 30000, 'short complete songs are not padded to a duration quota')
       const lastSound = timeline.targets.at(-1)
-      assert.ok(LEAD_IN_MS + musicDuration - lastSound.time - lastSound.duration < 1000, 'no silent padding after the final melody')
+      assert.ok(LEAD_IN_MS + musicDuration - lastSound.time - lastSound.duration < 1, 'the short melody reaches its actual tonic ending')
     }
     density[song.difficulty].push(notes.length / ((timeline.duration - LEAD_IN_MS - 700) / 1000))
     const fresh = () => createNotes(song)
@@ -101,18 +127,48 @@ async function check() {
   assert.deepEqual(pitchLanes([60, 64, 64, 64, 64, 64, 67], .25), [0, 2, 3, 2, 3, 2, 4], 'quick repeats alternate neighboring pads without drifting')
   const chartFor = id => createNotes(SONGS.find(song => song.id === id)).map(note => note.side)
   assert.deepEqual(chartFor('mary').slice(0, 7), [4, 2, 0, 2, 4, 4, 4], 'the nursery melody keeps its recognizable contour')
-  assert.deepEqual(chartFor('elise').slice(0, 5), [4, 3, 4, 3, 4], 'the semitone hook becomes a neighboring-pad trill')
-  assert.deepEqual(chartFor('edm-detection-mode').slice(0, 7), chartFor('edm-detection-mode').slice(7, 14), 'recorded phrases recall their authored motif')
+  const eliseHook = chartFor('elise').slice(0, 5)
+  assert.deepEqual(eliseHook, [eliseHook[0], eliseHook[1], eliseHook[0], eliseHook[1], eliseHook[0]])
+  assert.equal(eliseHook[0] - eliseHook[1], 1, 'the semitone hook stays a neighboring-pad trill within the full pitch range')
+  const ode = SONGS.find(song => song.id === 'ode')
+  const odeEvents = songTimeline(ode).targets
+  assert.ok(odeEvents.some(note => note.midi === 55), 'Ode includes the low dominant in its contrasting bridge')
+  assert.ok(!odeEvents.some(note => note.time === LEAD_IN_MS + Math.round(48 * 60000 / ode.bpm)), 'the tied Ode note is not re-triggered at measure253')
+  const byId = id => SONGS.find(song => song.id === id).score
+  assert.equal(byId('elise').sourcePlaybackCount, 1041)
+  assert.equal(byId('turkish').sourcePlaybackCount, 2810)
+  assert.equal(byId('spring').sourcePlaybackCount, 3173)
+  assert.equal(byId('tell').sourcePlaybackCount, 16922)
+  assert.equal(byId('cancan').sourcePlaybackCount, 488)
+  assert.ok(byId('elise').sections.some(section => section.label.startsWith('B:')))
+  assert.ok(byId('elise').sections.some(section => section.label.startsWith('C:')))
+  assert.ok(byId('spring').sections.some(section => section.label.includes('Thunderstorm')))
+  assert.ok(byId('turkish').sections.some(section => section.label.includes('coda')))
+  assert.ok(byId('cancan').sections.some(section => section.label.includes('G-major chorus')))
+  assert.ok(byId('cancan').sections.some(section => section.label.includes('D-major chorus')))
   const edm = SONGS.find(song => song.id === 'edm-detection-mode')
   const edmSection = (start, end) => edm.beats.filter(beat => {
     const seconds = beat * 60 / edm.bpm
     return seconds >= start && seconds < end
   }).length
-  assert.equal(edmSection(75, 105), 48, 'the real EDM breakdown keeps only three clear accents per bar')
-  assert.ok(edmSection(105, 135) > edmSection(75, 105) * 2, 'the chart follows the full beat returning')
+  const edmPhrase = bar => edm.beats.flatMap((beat, i) => {
+    const position = (Math.round((beat - edm.firstBeatMs * edm.bpm / 60000) * 4) - bar * 16) / 4
+    return position >= 0 && position < 4 ? [[Math.round(position * 4) / 4, edm.targetLanes[i]]] : []
+  })
+  assert.deepEqual(edmPhrase(16), edmPhrase(17), 'recurring synth phrases recall the same authored gesture')
+  assert.notDeepEqual(edmPhrase(16), edmPhrase(56), 'the breakdown is not a recycled main phrase')
+  assert.ok(edmSection(0, 30) > 0, 'the actual opening now has its own complete chart')
+  assert.equal(edmSection(105, 135), 48, 'the original EDM breakdown keeps only three clear accents per bar')
+  assert.ok(edmSection(135, 165) > edmSection(105, 135) * 2, 'the chart follows the full beat returning')
+  assert.equal(edm.audioDurationMs, 240000, 'the excerpt ends on the original 128-bar section boundary')
+  assert.equal(edmSection(238.125, 240), 2, 'the final transition follows its two remaining synth accents')
+  const disco = SONGS.find(song => song.id === 'disco-medusae')
+  assert.equal(disco.audioDurationMs, disco.sourceDurationMs, 'Disco Medusae retains the complete original recording')
+  assert.ok(disco.beats[0] * 60000 / disco.bpm >= 240 / disco.bpm * 2 * 1000, 'the original rising introduction has no artificial beat targets')
+  assert.ok(disco.beats.some(beat => beat * 60000 / disco.bpm < 10000), 'the first original phrase is playable')
   const overlap = [{ id: 0, side: 0, time: 1000 }, { id: 1, side: 0, time: 1250 }]
   assert.deepEqual(judgeHit(overlap, 0, 1220), { perfect: true })
   assert.equal(overlap[1].hit, true, 'nearest target wins an overlapping timing window')
-  console.log('All 12 song charts passed: 90–180 seconds of actual music, complete theme reprises, section-aware authored motifs, pitch contour, safe repeats, lead-in offsets, fixed categories, five lanes, synchronization, rests, rhythm density, shared timing boundaries, misses, replay, and mobile-sized audio assets.')
+  console.log('All 12 song charts passed: complete short tunes, verified full classical forms, no filler loops, four-minute cap, section-aware authored motifs, pitch contour, safe repeats, lead-in offsets, fixed categories, five lanes, synchronization, rests, rhythm density, shared timing boundaries, misses, replay, and mobile-sized audio assets.')
 }
 check().catch(error => { console.error(error); process.exitCode = 1 })

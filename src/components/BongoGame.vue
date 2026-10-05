@@ -11,7 +11,7 @@
     <section class="intro">
       <span class="eyebrow"><span></span> LITTLE PAWS, BIG GROOVE</span>
       <h1>오늘도, <span>냥냥하게.</span></h1>
-      <p>최대 3분의 음악, 열두 곡을 다섯 가지 소리로 톡톡!</p>
+      <p>원곡의 흐름대로, 최대 4분을 다섯 가지 소리로 톡톡!</p>
     </section>
 
     <fieldset ref="songPickerElement" class="speed-picker" aria-describedby="speed-help">
@@ -29,7 +29,7 @@
     <fieldset class="song-picker">
       <legend>2. {{ difficulty.title }} · 오늘의 연주곡</legend>
       <button v-for="song in filteredSongs" :key="song.id" :class="{ selected: song.id === selectedId }" :aria-pressed="song.id === selectedId" @click="chooseSong(song.id)">
-        <span class="song-icon" aria-hidden="true">{{ song.icon }}</span><span><strong>{{ song.title }}</strong><small>{{ song.subtitle }}</small><small class="song-tempo">{{ song.bpm }} BPM · {{ songLength(song) }}</small></span><span class="song-check" aria-hidden="true">{{ song.id === selectedId ? '✓' : '♪' }}</span>
+        <span class="song-icon" aria-hidden="true">{{ song.icon }}</span><span><strong>{{ song.title }}</strong><small>{{ song.subtitle }}</small><small v-if="song.scopeLabel" class="song-scope">{{ song.scopeLabel }}</small><small class="song-tempo">{{ song.bpm }} BPM · {{ songLength(song) }}</small></span><span class="song-check" aria-hidden="true">{{ song.id === selectedId ? '✓' : '♪' }}</span>
       </button>
     </fieldset>
     <div class="game-layout">
@@ -93,6 +93,7 @@
         </div>
         <p class="pad-guide">사용 버튼 {{ selectedSong.lanes.map(side => pads[side].key).join(' · ') }}<span>곡을 바꾸면 새로 시작해요.</span></p>
         <p class="playing-song">{{ selectedSong.title }} <span>· {{ difficulty.title }} · {{ chart.length }}개 음표 · 음악 {{ songLength(selectedSong) }} · 준비 시간 별도</span></p>
+        <p v-if="selectedSong.scope" class="form-note">{{ selectedSong.scope }}</p>
         <p class="best"><span>♕ 이 곡 · {{ difficulty.title }} 최고 기록</span><strong>{{ best.toLocaleString() }} pt</strong></p>
         <button v-if="phase === 'playing'" class="start-button secondary" @click="pause">잠깐 쉬기 <span>Ⅱ</span></button>
         <button v-else class="start-button" :disabled="phase === 'loading'" @click="phase === 'paused' ? resume() : start()">{{ phase === 'loading' ? '음악 불러오는 중…' : phase === 'paused' ? '이어서 연주하기' : phase === 'finished' ? '한 번 더 연주하기' : '선택한 곡으로 시작' }}<span>→</span></button>
@@ -100,12 +101,13 @@
         <p v-else class="free-note">{{ phase === 'playing' ? '잘못 누르면 -50점 · 점수는 0점 아래로 내려가지 않아요.' : '시작 전에는 자유롭게 연주할 수 있어요.' }}</p>
         <p v-if="audioError" class="audio-error" role="alert">{{ audioError }}</p>
         <div class="tip"><span aria-hidden="true">♡</span><p>잘하는 것보다 즐거운 게 중요해요.<br><strong>고양이는 언제나 당신 편!</strong></p></div>
-        <p class="sr-only" aria-live="polite">{{ announcement }}</p>
       </aside>
     </div>
+    <p class="sr-only" aria-live="polite">{{ announcement }}</p>
     <details class="music-credits"><summary>음악 출처와 라이선스</summary>
-      <p>동요와 클래식은 역사적 멜로디를 직접 합성하고 반복 구절로 구성한 연주예요. 현대 음원이나 편곡을 복사하지 않았어요.</p>
-      <p v-for="song in SONGS.filter(item => item.credit)" :key="song.id"><a :href="song.credit.source" target="_blank" rel="noopener noreferrer">{{ song.title }}</a> · Kevin MacLeod (incompetech.com) · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a><br>게임용 발췌, 음량 조절과 페이드 적용. 음악의 라이선스는 게임 코드와 별개예요.</p>
+      <p>동요는 한 곡을 처음부터 끝까지, 클래식은 악보의 실제 구절·대조부·종지를 따라 합성해요. 악보에 적힌 반복만 유지하고, 길이를 채우는 반복은 넣지 않았어요.</p>
+      <p v-for="song in SONGS.filter(item => item.credit)" :key="song.id"><a :href="song.credit.source" target="_blank" rel="noopener noreferrer">{{ song.title }}</a> · {{ song.credit.artist }} · <a :href="song.credit.licenseUrl" target="_blank" rel="noopener noreferrer">{{ song.credit.license }}</a><br>{{ song.credit.summary || '음량 조절과 페이드 적용. 음악·악보의 라이선스는 게임 코드와 별개예요.' }}</p>
+      <p><a :href="scoreCreditsUrl" target="_blank" rel="noopener noreferrer">곡별 전체 구성·악보 출처·수정 내역</a></p>
     </details>
     <footer>MADE FOR YOUR PAWS <span>·</span> 작은 리듬이 필요한 모든 순간에</footer>
   </section>
@@ -117,6 +119,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { APPROACH_MS, HIT_WINDOW, DIFFICULTIES, createNotes, expireNotes, judgeHit } from '../rhythm.mjs'
 import { LEAD_IN_MS, SONGS, songTimeline } from '../songs.mjs'
 
+const scoreCreditsUrl = process.env.BASE_URL + 'music-sources/CREDITS.md'
 const selectedId = ref(SONGS[0].id)
 const difficultyId = ref(SONGS[0].difficulty)
 const difficulty = computed(() => DIFFICULTIES.find(level => level.id === difficultyId.value))
@@ -126,7 +129,7 @@ const SCROLL_SPEEDS = [1, 2, 4, 8]
 const scrollMultiplier = ref(1)
 const roundLeadIn = ref(LEAD_IN_MS)
 const chart = computed(() => createNotes(selectedSong.value, roundLeadIn.value))
-const recordKey = computed(() => `bongo-cat-best-v5-${selectedId.value}`)
+const recordKey = computed(() => `bongo-cat-best-v6-${selectedId.value}`)
 const timeline = computed(() => songTimeline(selectedSong.value, roundLeadIn.value))
 const duration = computed(() => timeline.value.duration)
 const musicLengths = new Map(SONGS.map(song => [song.id, Math.round((songTimeline(song).duration - LEAD_IN_MS - 700) / 1000)]))
@@ -178,6 +181,7 @@ function setFallSpeed() {
   fallSpeed.value = (heights[difficultyId.value] - 2) * .8 / APPROACH_MS * scrollMultiplier.value
 }
 let frame, startedAt = 0, audioStartedAt = 0, audio, master, feedbackTimer, startVersion = 0
+let nextMelody = 0, nextBass = 0
 const audioBuffers = new Map()
 const voices = new Set()
 const pawTimers = []
@@ -220,14 +224,14 @@ function stopMusic() {
 function playTone(note, offset, bass = false) {
   const remaining = note.time + note.duration - offset
   if (note.midi === null || remaining <= 0) return
-  const when = audio.currentTime + Math.max(0, note.time - offset) / 1000
+  const when = Math.max(audio.currentTime, audioStartedAt + note.time / 1000)
   const length = Math.min(note.duration, remaining) / 1000
   const oscillator = audio.createOscillator()
   const envelope = audio.createGain()
-  oscillator.type = bass ? 'sine' : 'triangle'
+  oscillator.type = bass || note.midi < 48 ? 'sine' : 'triangle'
   oscillator.frequency.value = 440 * 2 ** ((note.midi - 69) / 12)
   envelope.gain.setValueAtTime(0, when)
-  envelope.gain.linearRampToValueAtTime(bass ? 0.075 : 0.22, when + 0.012)
+  envelope.gain.linearRampToValueAtTime(note.gain ?? (bass ? 0.075 : 0.22), when + Math.min(0.012, length / 4))
   envelope.gain.exponentialRampToValueAtTime(0.001, when + Math.max(0.03, length * 0.92))
   oscillator.connect(envelope)
   envelope.connect(master)
@@ -253,8 +257,16 @@ function scheduleMusic(offset) {
     }
     return
   }
-  timeline.value.melody.forEach(note => playTone(note, offset))
-  timeline.value.bass.forEach(note => playTone(note, offset, true))
+  nextMelody = 0
+  nextBass = 0
+  scheduleUpcoming(offset)
+}
+function scheduleUpcoming(offset) {
+  if (!audio || !master || selectedSong.value.audioFile) return
+  // Full scores retain every voice, but only the next second is scheduled at once.
+  const { melody, bass } = timeline.value
+  while (nextMelody < melody.length && melody[nextMelody].time < offset + 1000) playTone(melody[nextMelody++], offset)
+  while (nextBass < bass.length && bass[nextBass].time < offset + 1000) playTone(bass[nextBass++], offset, true)
 }
 function currentElapsed() {
   const time = audio && audio.state === 'running' ? (audio.currentTime - audioStartedAt) * 1000 : performance.now() - startedAt
@@ -342,6 +354,7 @@ function finish() {
 function update() {
   if (phase.value !== 'playing') return
   elapsed.value = currentElapsed()
+  scheduleUpcoming(elapsed.value)
   if (expireNotes(notes.value, elapsed.value)) { combo.value = 0; showFeedback('다음 박자에 톡!', 'miss') }
   if (elapsed.value >= duration.value) { finish(); return }
   frame = requestAnimationFrame(update)
@@ -481,6 +494,8 @@ onUnmounted(() => {
 .speed-picker legend{font-size:11px;font-weight:800;color:#8d806c;margin-bottom:9px}
 .speed-picker button{min-height:44px;border:1px solid #e3dac9;border-radius:11px;background:#fffdf7;font-size:12px;font-weight:800}
 .speed-picker button.selected{background:#544b3e;color:#fffaf1;border-color:#544b3e}
+.form-note{font-size:10px;line-height:1.7;color:#8d806c}
+.song-picker .song-scope{display:block;font-size:9px;color:#8d806c}
 .speed-help{font-size:10px;color:#8d806c;margin:8px 0 20px;line-height:1.6}
 /* The falling lane itself stays tall in every state and at every width. */
 .club .studio{height:100vh;height:100dvh;min-height:480px;display:flex;flex-direction:column;border:0;outline:1px solid #e6dfd0;box-shadow:none;padding:env(safe-area-inset-top) max(0px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left))}

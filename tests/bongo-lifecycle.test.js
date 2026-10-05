@@ -50,7 +50,7 @@ async function check() {
     requestAnimationFrame: fn => { frames.set(++nextId, fn); return nextId }, cancelAnimationFrame: id => frames.delete(id),
     setTimeout: fn => { timers.set(++nextId, fn); return nextId }, clearTimeout: id => timers.delete(id),
   }
-  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, SCROLL_SPEEDS, scrollMultiplier, chooseSpeed, accessibleTap, feedback, songPickerElement, showSongPicker, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
+  const game = new Function(...Object.keys(args), source + '\nreturn { start, pause, resume, chooseSong, chooseDifficulty, freePlay, toggleMute, tap, update, keydown, visibility, phase, score, best, notes, elapsed, duration, accuracy, selectedId, difficultyId, filteredSongs, muted, combo, hits, active, pads, audioError, audioBuffers, timeline, SCROLL_SPEEDS, scrollMultiplier, chooseSpeed, accessibleTap, feedback, songPickerElement, showSongPicker, trackElement, trackHeight, measureTrack, hitLineY, approachMs, fallSpeed, noteY, roundLeadIn };')(...Object.values(args))
   mounts.forEach(fn => fn())
   assert.equal(context, undefined, 'audio never starts before a gesture')
   assert.equal(game.pads.length, 5)
@@ -60,6 +60,7 @@ async function check() {
   storage.set('bongo-cat-best-v2-twinkle-hard', '23456')
   storage.set('bongo-cat-best-v3-twinkle', '34567')
   storage.set('bongo-cat-best-v4-twinkle', '45678')
+  storage.set('bongo-cat-best-v5-twinkle', '56789')
   const records = new Map()
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
@@ -93,7 +94,7 @@ async function check() {
     assert.equal(frames.size, 0)
     assert.equal(game.best.value, expected)
     records.set(song.id, expected)
-    assert.equal(storage.get(`bongo-cat-best-v5-${song.id}`), String(expected))
+    assert.equal(storage.get(`bongo-cat-best-v6-${song.id}`), String(expected))
     await game.start()
     assert.equal(game.score.value, 0)
     assert.equal(game.hits.value, 0)
@@ -121,6 +122,7 @@ async function check() {
   assert.equal(storage.get('bongo-cat-best-v2-twinkle-hard'), '23456')
   assert.equal(storage.get('bongo-cat-best-v3-twinkle'), '34567')
   assert.equal(storage.get('bongo-cat-best-v4-twinkle'), '45678')
+  assert.equal(storage.get('bongo-cat-best-v5-twinkle'), '56789')
   for (const song of songs.SONGS) {
     game.chooseSong(song.id)
     assert.equal(game.best.value, records.get(song.id), '12 song records restore independently')
@@ -302,6 +304,24 @@ async function check() {
   }
   game.chooseSpeed(1)
   game.trackElement.value = null
+  // Stream a whole polyphonic score from the real animation clock, not eager node creation.
+  game.chooseSong('turkish')
+  game.chooseSpeed(8)
+  const voicesBeforeScore = voices.length
+  await game.start()
+  assert.ok(voices.length - voicesBeforeScore < 100, 'full score is not scheduled eagerly')
+  const scoreEpoch = context.currentTime
+  const expectedTones = game.timeline.value.melody.filter(note => note.midi !== null).length + game.timeline.value.bass.length
+  for (let ms = 0; ms < game.duration.value + 300; ms += 250) {
+    context.currentTime = scoreEpoch + ms / 1000
+    clock = context.currentTime * 1000
+    const pendingFrame = frames.entries().next().value
+    if (pendingFrame) { frames.delete(pendingFrame[0]); pendingFrame[1]() }
+  }
+  assert.equal(game.phase.value, 'finished')
+  assert.equal(voices.length - voicesBeforeScore, expectedTones, 'all source voices are eventually played exactly once')
+  assert.equal(frames.size, 0)
+  game.chooseSpeed(1)
   // Failed download is retryable; stale asynchronous loads cannot start a different song.
   const recording = songs.SONGS.find(s => s.audioFile)
   game.audioBuffers.clear(); game.chooseSong(recording.id); fetchMode = 'fail'
