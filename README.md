@@ -26,6 +26,17 @@ npm run build
 
 There is no separate automated test suite configured.
 
+### GitHub Pages
+
+In repository Settings → Pages, select **GitHub Actions** as the source.
+The Node CI workflow builds and deploys `master` to
+https://gelius7.github.io/sample-vue/ after lint and build pass.
+Pull requests are checked but never deployed.
+
+The workflow sets `PUBLIC_PATH=/sample-vue/` for project-site assets.
+Local development and ordinary builds continue to use `/`.
+Form entries are held only in browser memory and reset when the page reloads.
+
 ### Lints and fixes files
 ```
 npm run lint

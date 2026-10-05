@@ -50,13 +50,13 @@
     methods: {
         addEmployee(person) {
             const lastId =
-                this.people.length > 0
-                ? this.people[this.people.length - 1].id
+                this.peopleData.length > 0
+                ? this.peopleData[this.peopleData.length - 1].id
                 : 0;
             const id = lastId + 1;
             const newEmployee = { ...person, id };
 
-            this.people = [...this.people, newEmployee];
+            this.peopleData = [...this.peopleData, newEmployee];
         }
     }
   }
