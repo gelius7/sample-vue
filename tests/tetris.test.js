@@ -181,5 +181,7 @@ function lifecycle(engine, clearRows) {
   assert.ok(focusCount >= 3, 'start and resume restore keyboard focus')
   for (const action of ['left', 'right', 'rotate', 'down', 'drop']) assert.ok(component.includes(`@click="act('${action}')"`), action + ' has a native touch/keyboard button')
   assert.ok(component.includes(':disabled="phase !== \'playing\'"'))
+  assert.ok(component.includes('@media(max-height:960px) and (min-width:601px)'), 'short desktop windows use the compact side layout')
+  assert.ok(component.includes('calc((100svh - 240px)/2)'), 'desktop board height follows the available viewport')
 }
 check().catch(error => { console.error(error); process.exitCode = 1 })
