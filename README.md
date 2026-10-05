@@ -1,4 +1,4 @@
-# Bongo Cat · 냥냥 리듬 클럽
+# Play a Little · 작은 게임 놀이터
 
 ## Project setup
 
@@ -25,7 +25,7 @@ npm run lint -- --no-fix
 npm run build
 ```
 
-Run `npm test` for the rhythm timing, scoring, missed-note, and replay checks.
+Run `npm test` for song/chart synchronization, scoring, audio lifecycle, navigation structure, and fruit physics checks.
 
 ### GitHub Pages
 
@@ -36,13 +36,32 @@ Pull requests are checked but never deployed.
 
 The workflow sets `PUBLIC_PATH=/sample-vue/` for project-site assets.
 Local development and ordinary builds continue to use `/`.
-A mobile-friendly cat drum game built with Vue 3, original SVG artwork, and Web Audio.
-Tap the two pads or use A / L (or arrow keys) to play. Start a 30-second round
-and hit each colored note when it reaches the line. Each note scores once;
-perfect timing earns 100 points, good timing 70, plus a small combo bonus.
-The highest score is saved only on this browser when local storage is available.
-Audio starts after a gesture; mute, pause/resume, and free play are supported.
-Switching away from the page pauses an active round. No account or backend is used.
+
+## Games
+
+- **냥냥 리듬 클럽** (`#bongo`): original SVG cat, two touch/keyboard pads, and three selectable instrumental children's melodies. Every falling note matches a melody onset. Each song lasts about 30–37 seconds. Perfect timing earns 100 points, good timing 70, plus a small combo bonus. Best scores are stored separately for each song on this browser.
+- **수박 만들기** (`#watermelon`): drop and combine matching fruits into larger ones, with score, best score, pause, restart, and overflow game over. Original canvas artwork and lightweight local physics.
+
+No account, tracking, server, game API, or downloaded audio is used. Sound only starts after a gesture. Mute, pause/resume, and replay are supported. Switching away from the page pauses a round; leaving a game destroys its state and stops its audio/animation/listeners.
+
+## Adding another game
+
+1. Create a self-contained Vue component under `src/components/` with scoped styles.
+2. Add its import and card metadata to `src/games.js`.
+3. Clean up animation frames, audio, timers, and global listeners in `onUnmounted`. Handle page visibility where gameplay needs pausing.
+4. Add a focused check under `tests/` and include it in `npm test`.
+
+`App.vue` owns only the game picker and hash navigation (including browser Back/Forward). The selected component is keyed and unmounted on game changes; there is no shared mutable game state or plugin framework. The home card artwork has a generic fallback for new entries; customize it if desired.
+
+## Music provenance
+
+Only the historic melody lines below are used. The Web Audio timbre and simple accompaniment in this repository are original; there are no copied recordings, modern arrangements, or lyrics (including translated lyrics).
+
+- **반짝반짝 작은 별 / Twinkle, Twinkle, Little Star**: traditional French melody, *Ah! vous dirai-je, maman*. The Morgan Library links it to Twinkle and documents Mozart's surviving 1781–1782 variations: https://www.themorgan.org/exhibitions/online/mozart/418 . Mozart did not compose the underlying traditional melody.
+- **프레르 자크 / Frère Jacques**: documented in *La clé du caveau* (1811), page 309, no. 726: https://www.themorgan.org/music-manuscripts-and-printed-music/130800 .
+- **메리의 작은 양 / Mary Had a Little Lamb**: the familiar melodic contour is documented in the “Good Night” chorus (“Merrily we roll along”), *Carmina Yalensia* (1867), printed page 47 (PDF page 53): https://upload.wikimedia.org/wikipedia/commons/e/e4/Carmina_Yalensia_-_a_complete_and_accurate_collection_of_Yale_College_songs_-_with_piano_accompaniment_(IA_carminayalensiac00garr).pdf#page=53 . This game uses its repeated-E phrase. This is not the different Lowell Mason setting of 1831.
+
+These historical melody sources predate modern copyright terms. New recordings and arrangements can have separate rights and are not included here.
 
 ### Lints and fixes files
 ```

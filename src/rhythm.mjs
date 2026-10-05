@@ -1,11 +1,11 @@
-export const ROUND_MS = 30000
+import { SONGS, songTimeline } from './songs.mjs'
+
 export const APPROACH_MS = 1200
 export const HIT_WINDOW = 180
 
-export function createNotes() {
-  const pattern = [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1]
-  return Array.from({ length: 48 }, (_, id) => ({
-    id, side: pattern[id % pattern.length], time: 1200 + id * 600, hit: false, missed: false,
+export function createNotes(song = SONGS[0]) {
+  return songTimeline(song).melody.map(({ id, time }) => ({
+    id, side: id % 2, time, hit: false, missed: false,
   }))
 }
 
