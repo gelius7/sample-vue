@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const source = fs.readFileSync('src/App.vue', 'utf8').split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '')
-const games = [{ id: 'bongo', component: {} }, { id: 'watermelon', component: {} }]
+const games = [{ id: 'bongo', component: {} }, { id: 'watermelon', component: {} }, { id: 'tetris', component: {} }]
 const mounts = [], unmounts = []
 let listener, hash = '#bongo'
 const location = { get hash() { return hash }, set hash(value) { hash = value && !value.startsWith('#') ? '#' + value : value } }
@@ -12,6 +12,8 @@ mounts.forEach(fn => fn())
 assert.equal(app.currentGame.value.id, 'bongo', 'direct game links open the right game')
 app.openGame('watermelon'); listener()
 assert.equal(app.currentGame.value.id, 'watermelon')
+app.openGame('tetris'); listener()
+assert.equal(app.currentGame.value.id, 'tetris', 'the Tetris card uses the existing hash route')
 app.goHome(); listener()
 assert.equal(app.currentGame.value, undefined)
 window.location.hash = '#bongo'; listener()
