@@ -39,7 +39,7 @@ Local development and ordinary builds continue to use `/`.
 
 ## Games
 
-- **냥냥 리듬 클럽** (`#bongo`): original SVG cat, two touch/keyboard pads, and three selectable instrumental children's melodies. Every falling note matches a melody onset. Each song lasts about 30–37 seconds. Perfect timing earns 100 points, good timing 70, plus a small combo bonus. Best scores are stored separately for each song on this browser.
+- **냥냥 리듬 클럽** (`#bongo`): original SVG cat, two touch/keyboard pads, and three selectable instrumental children's melodies. Choose Easy, Normal, or Hard without changing the music's tempo. Easy uses spaced melody onsets and alternating paws; Normal follows every melody onset with varied hand patterns; Hard adds half-beat pulses and double taps. Timing windows tighten from ±220 ms to ±150 ms to ±100 ms (Perfect: ±110/70/45 ms). Each song lasts about 30–37 seconds. Perfect timing earns 100 points, good timing 70, plus a small combo bonus. Best scores are stored separately for all nine song/difficulty combinations on this browser. The new charts use versioned records; previous single-level scores are left untouched. Changing a song or difficulty stops and resets the round.
 - **수박 만들기** (`#watermelon`): drop and combine matching fruits into larger ones, with score, best score, pause, restart, and overflow game over. Original canvas artwork and lightweight local physics.
 
 No account, tracking, server, game API, or downloaded audio is used. Sound only starts after a gesture. Mute, pause/resume, and replay are supported. Switching away from the page pauses a round; leaving a game destroys its state and stops its audio/animation/listeners.
