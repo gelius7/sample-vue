@@ -1,4 +1,4 @@
-# Vue js project sample
+# Bongo Cat · 냥냥 리듬 클럽
 
 ## Project setup
 
@@ -20,11 +20,12 @@ npm run build
 
 ### Validate the project
 ```
+npm test
 npm run lint -- --no-fix
 npm run build
 ```
 
-There is no separate automated test suite configured.
+Run `npm test` for the rhythm timing, scoring, missed-note, and replay checks.
 
 ### GitHub Pages
 
@@ -35,7 +36,13 @@ Pull requests are checked but never deployed.
 
 The workflow sets `PUBLIC_PATH=/sample-vue/` for project-site assets.
 Local development and ordinary builds continue to use `/`.
-Form entries are held only in browser memory and reset when the page reloads.
+A mobile-friendly cat drum game built with Vue 3, original SVG artwork, and Web Audio.
+Tap the two pads or use A / L (or arrow keys) to play. Start a 30-second round
+and hit each colored note when it reaches the line. Each note scores once;
+perfect timing earns 100 points, good timing 70, plus a small combo bonus.
+The highest score is saved only on this browser when local storage is available.
+Audio starts after a gesture; mute, pause/resume, and free play are supported.
+Switching away from the page pauses an active round. No account or backend is used.
 
 ### Lints and fixes files
 ```
