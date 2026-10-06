@@ -6,7 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test": "node tests/rhythm.test.js && node tests/bongo-lifecycle.test.js && node tests/fruit.test.js && node tests/navigation.test.js && node tests/tetris.test.js"
+    "test": "node tests/rhythm.test.js && node tests/bongo-lifecycle.test.js && node tests/fruit.test.js && node tests/navigation.test.js && node tests/tetris.test.js && node tests/snake.test.js"
   },
   "dependencies": {
     "core-js": "^3.37.1",

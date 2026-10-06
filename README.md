@@ -25,7 +25,7 @@ npm run lint -- --no-fix
 npm run build
 ```
 
-Run `npm test` for song/chart synchronization, scoring, audio lifecycle, navigation structure, fruit physics, and Tetris rules/lifecycle checks.
+Run `npm test` for song/chart synchronization, scoring, audio lifecycle, navigation structure, fruit physics, Tetris rules/lifecycle, and Snake rules/lifecycle checks.
 
 ### GitHub Pages
 
@@ -43,6 +43,8 @@ Local development and ordinary builds continue to use `/`.
 - **수박 만들기** (`#watermelon`): drop and combine matching fruits into larger ones, with score, best score, pause, restart, and overflow game over. Original canvas artwork and lightweight local physics.
 
 - **테트리스 40라인** (`#tetris`): a basic 10×20 board and seven shuffled-bag pieces. Arrow keys move/rotate/soft-drop; Space hard-drops; P or Escape pauses. Touch buttons provide the same moves. Clear 40 lines to finish and see the active-play completion time (pauses excluded); a blocked spawn ends the game. Restart resets the board and clock. Changing tabs pauses, and leaving the game cancels its animation and listeners.
+
+- **꼬물꼬물 스네이크** (`#snake`): a 16×16 board with apples worth 10 points each. Arrows/WASD, touch direction buttons, or board swipes turn the snake. Walls and self-collision end the round; filling the board wins. P/Escape pauses or resumes. Only one turn is accepted per movement tick, preventing rapid reversals. Tab changes or window blur pause; leaving cancels the timer and listeners.
 
 No account, tracking, server, or game API is used. Three credited, licensed recordings are served locally with the app; other songs are synthesized in Web Audio. Short nursery tunes last their natural 17–28 seconds. Classical selections now follow complete score forms with contrasting episodes and cadences, rather than repeating an excerpt to fill time. Electrodoodle and Disco Medusae play from the original beginning through the ending; EDM Detection Mode is explicitly the opening four-minute excerpt. No music exceeds 240 seconds. Count-in and the brief result tail are additional, and the picker labels the music length explicitly. Sound only starts after a gesture. Mute, pause/resume, and replay are supported. Recordings (about 2.6–3.9 MB each, 128 kbps) are fetched on first play. Only the current song’s decoded buffer is cached; changing songs releases the previous buffer, and versioned filenames prevent an old short audio clip being reused. Same-song replay uses the cache; pause/resume seeks to the matching chart position. Failed loads can be retried, and late load completion cannot start a different song or revive a backgrounded/unmounted game. Switching away from the page pauses a round; leaving a game destroys its state and stops its audio/animation/listeners.
 
