@@ -27,7 +27,6 @@
 </template>
 
 <script setup>
-/* eslint-env browser */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { games } from './games'
 const selected = ref(window.location.hash.slice(1))

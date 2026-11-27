@@ -21,7 +21,7 @@ npm run build
 ### Validate the project
 ```
 npm test
-npm run lint -- --no-fix
+npm run lint
 npm run build
 ```
 
@@ -73,33 +73,6 @@ The game does not create extra whole-tune loops or silent padding to meet a leng
 
 The repository's MIT license covers its original game code; it does not override the music/score-specific licenses. Read [NOTICE](public/music-sources/NOTICE.txt), the included [MPL-2.0 text](public/music-sources/MPL-2.0.txt), [CC BY-SA 3.0 terms](https://creativecommons.org/licenses/by-sa/3.0/), and [CC BY 4.0 terms](https://creativecommons.org/licenses/by/4.0/).
 
-### Lints and fixes files
-```
-npm run lint
-```
+### Build configuration
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
-
-## vue-cli install
-
-* npm i -g @vue/cli @vue/cli-service-global
-
-## Create sample vue project
-
-```bash
-$ vue create vue-app
-```
-* select default
-
-```bash
-cd vue-app
-npm run serve
-```
-
-* Access site
-  * localhost:8080
-
-## Reference
-
-* https://www.taniarascia.com/getting-started-with-vue/
+See [Vite configuration](https://vite.dev/config/). The development server binds to localhost by default.

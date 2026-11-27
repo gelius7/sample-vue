@@ -38,7 +38,6 @@
 </template>
 
 <script setup>
-/* eslint-env browser */
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { COLUMNS, ROWS, TARGET_LINES, createGame, formatTime, hardDrop, move, rotate, tick } from '../tetris.mjs'
 

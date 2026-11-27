@@ -1,4 +1,3 @@
-/* eslint-env es6 */
 export const WIDTH = 360
 export const HEIGHT = 480
 export const DANGER_Y = 82

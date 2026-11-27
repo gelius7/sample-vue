@@ -114,12 +114,11 @@
 </template>
 
 <script setup>
-/* eslint-env browser, es6 */
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { APPROACH_MS, HIT_WINDOW, DIFFICULTIES, createNotes, expireNotes, judgeHit } from '../rhythm.mjs'
 import { LEAD_IN_MS, SONGS, songTimeline } from '../songs.mjs'
 
-const scoreCreditsUrl = process.env.BASE_URL + 'music-sources/CREDITS.md'
+const scoreCreditsUrl = import.meta.env.BASE_URL + 'music-sources/CREDITS.md'
 const selectedId = ref(SONGS[0].id)
 const difficultyId = ref(SONGS[0].difficulty)
 const difficulty = computed(() => DIFFICULTIES.find(level => level.id === difficultyId.value))
@@ -369,7 +368,7 @@ async function start() {
       if (!audio) throw new Error('Web Audio unavailable')
       if (!audioBuffers.has(selectedId.value)) {
         const id = selectedId.value
-        const response = await fetch(process.env.BASE_URL + selectedSong.value.audioFile)
+        const response = await fetch(import.meta.env.BASE_URL + selectedSong.value.audioFile)
         if (!response.ok) throw new Error('Audio download failed')
         const buffer = await audio.decodeAudioData(await response.arrayBuffer())
         if (version !== startVersion) return

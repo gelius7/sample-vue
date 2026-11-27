@@ -1,4 +1,3 @@
-/* eslint-env es6 */
 import { LEAD_IN_MS, SONGS, songTimeline } from './songs.mjs'
 
 // Difficulty belongs to the song, not to a stricter scoring rule.
