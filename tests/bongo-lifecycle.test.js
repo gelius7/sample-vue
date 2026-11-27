@@ -1,4 +1,3 @@
-/* eslint-env es6 */
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 
@@ -14,7 +13,7 @@ async function check() {
     assert.equal((before.match(/\{/g) || []).length, (before.match(/\}/g) || []).length, 'tall geometry is not inside a mobile-only media query')
   }
   assert.match(style, /@media\(max-height:480px\)\{[\s\S]*\.club \.studio\{min-height:0\}/, 'compact landscape controls apply at every width')
-  const source = component.split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '')
+  const source = component.split('<script setup>')[1].split('</script>')[0].replace(/^import .+$/gm, '').replaceAll('import.meta.env.BASE_URL', 'baseUrl')
   const mounts = [], unmounts = [], voices = [], frames = new Map(), listeners = new Set(), storage = new Map(), timers = new Map()
   let mobile = false, observerDisconnected = false
   let context, clock = 0, nextId = 0, fetchMode = 'ok', releaseFetch, downloads = 0
@@ -41,8 +40,9 @@ async function check() {
     onMounted: fn => mounts.push(fn), onUnmounted: fn => unmounts.push(fn),
     window: { AudioContext, matchMedia: () => ({ matches: mobile }), ...fakeEvents }, document: { hidden: false, ...fakeEvents },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
-    performance: { now: () => clock }, process: { env: { BASE_URL: '/sample-vue/' } },
+    performance: { now: () => clock }, baseUrl: '/sample-vue/',
     fetch: async file => {
+      assert.ok(file.startsWith('/sample-vue/'), 'audio uses the Pages base path')
       downloads++
       if (fetchMode === 'wait') await new Promise(resolve => { releaseFetch = resolve })
       return { ok: fetchMode !== 'fail', arrayBuffer: async () => file }

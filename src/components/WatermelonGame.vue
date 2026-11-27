@@ -64,7 +64,6 @@
 </template>
 
 <script setup>
-/* eslint-env browser */
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { DANGER_Y, DROP_Y, FRUITS, HEIGHT, STEP, WIDTH, createWorld, dropFruit, stepWorld } from '../fruit.mjs'
 

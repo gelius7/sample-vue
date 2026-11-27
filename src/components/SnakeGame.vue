@@ -31,7 +31,6 @@
 </template>
 
 <script setup>
-/* eslint-env browser */
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { SIZE, createGame, tick, turn } from '../snake.mjs'
 const game = ref(null), boardElement = ref(null)
